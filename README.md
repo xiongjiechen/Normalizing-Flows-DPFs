@@ -30,5 +30,5 @@ This experiment evaluates the performance of **Conditional Normalizing Flow DPFs
 - ```./data/``` contains the python script [./data/disk/create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py) for creating training, validation, and testing sets. Generated datasets will be stored in this folder.
 - ```./model/``` contains the python script [./model/models.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/model/models.py) used to initialize components of evaluated models, 
 - ```./nf/``` different types of flow models ([Planar Flow, Radial Flow](https://arxiv.org/abs/1505.05770), [RealNVP](https://arxiv.org/abs/1605.08803), [MAF](https://arxiv.org/abs/1705.07057), etc.) are implemented in this folder.
-- ```./resamplers``` differentiable resampling schemes including [soft resampling](https://arxiv.org/abs/1805.08975) and [resampling via optimal transport](http://proceedings.mlr.press/v139/corenflos21a/corenflos21a.pdf) are included in this folder.
+- ```./resamplers/``` implementations of differentiable resampling schemes including [soft resampling](https://arxiv.org/abs/1805.08975) and [resampling via optimal transport](http://proceedings.mlr.press/v139/corenflos21a/corenflos21a.pdf) are included in this folder.
 
