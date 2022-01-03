@@ -18,4 +18,9 @@ This experiment evaluates the performance of **Conditional Normalizing Flow DPFs
 
 ### Create datasets
 
-Run [create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py) to create the disk tracking dataset for training, validation and testing sets. The dataset will be stored in the folder ```./data/disk/```.
+Run the file [./data/disk/create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py) to create the disk tracking dataset for training, validation and testing sets. The generated dataset will be stored in the folder ```./data/disk/``` as default. Some optional parameters are listed as follows:
+- ```--num-distractors``` number of distractors in the observation image.
+- ```--pos_noise``` standard deviation of target positions when generating trajectories.
+- ```--num_examples``` number of trajectory samples being generated.
+- ```--sequence_length``` length of generated trajectories.
+- ```--out_dir``` specify the directory to store the generated datasets.
