@@ -35,7 +35,7 @@ This experiment evaluates the performance of **Conditional Normalizing Flow DPFs
 
 ### Scripts
 
-- ```[experiment_DiskTracking.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/experiment_DiskTracking.py)``` run this file to train, validate, and test the model.
+- [experiment_DiskTracking.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/experiment_DiskTracking.py) run this file to train, validate, and test the model.
 - ```[DPFs.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/DPFs.py)``` implementation of the proposed differentiable particle filtering algorithm, contains the training, validation, and testing functions.
 - ```[dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/dataset.py)``` implement a pytorch Dataset class for the disk tracking dataset.
 - ```[losses.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/losses.py)``` different optimisation objective for training the model.
