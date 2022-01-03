@@ -1,6 +1,6 @@
 # Normalizing-Flows-DPFs
 
-This repository provides the code to reproduce the experimental results in the paper **[Augmented Sliced Wasserstein Distances](https://arxiv.org/abs/2006.08812)** by **[Xiongjie Chen](https://github.com/xiongjiechen), [Hao Wen](https://www.surrey.ac.uk/people/hao-wen)** and **[Yunpeng Li](https://www.surrey.ac.uk/people/yunpeng-li)**.
+This repository provides the code to reproduce the experimental results in the paper **[Differentiable Particle Filters through Conditional Normalizing Flow](https://arxiv.org/pdf/2107.00488.pdf)** by **[Xiongjie Chen](https://github.com/xiongjiechen), [Hao Wen](https://www.surrey.ac.uk/people/hao-wen)** and **[Yunpeng Li](https://www.surrey.ac.uk/people/yunpeng-li)**.
 
 ## Prequisite
 
