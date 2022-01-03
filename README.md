@@ -11,3 +11,6 @@ To install the required python packages, run the following command:
 ```
 pip install -r requirements.txt
 ```
+### Create datasets
+
+To create the disk tracking dataset for training and testing, run [create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/main/data/disk/create_toy_dataset.py)
