@@ -27,7 +27,7 @@ This experiment evaluates the performance of **Conditional Normalizing Flow DPFs
 
 ### Directories
 
--```./data/disk/``` contains the python script [./data/disk/create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py) for creating training, validation, and testing sets, and the generated dataset will be stored in this folder.
+- ```./data/disk/``` contains the python script [./data/disk/create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py) for creating training, validation, and testing sets, and the generated dataset will be stored in this folder.
 
 
 
