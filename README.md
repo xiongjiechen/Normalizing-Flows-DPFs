@@ -23,7 +23,7 @@ Run the file [./data/disk/create_toy_dataset.py](https://github.com/xiongjiechen
 
 ## Experiment Details & Project Structure
 
-This experiment evaluates the performance of **Conditional Normalizing Flow DPFs (CNF-DPFs)*** in a disk tracking experiment where the task is to track a moving red disk moving along the other distractor disks with different colours. While tracking the target, the observation images are provided at each time step, from which we expect our filter to infer the position of the red disk. The red disk can be occluded by the distractors and may occasionlly run out of the boundary of the images as collisions are not considered in our setting. More detailed description can be found in our paper **[Differentiable Particle Filters through Conditional Normalizing Flow](https://arxiv.org/abs/2107.00488).
+This experiment evaluates the performance of **Conditional Normalizing Flow DPFs (CNF-DPFs)*** in a disk tracking experiment where the task is to track a moving red disk moving along the other distractor disks with different colours. While tracking the target, the observation images are provided at each time step, from which we expect our filter to infer the position of the red disk. The red disk can be occluded by the distractors and may occasionlly run out of the boundary of the images as collisions are not considered in our setting. More detailed description can be found in our paper **[Differentiable Particle Filters through Conditional Normalizing Flow](https://arxiv.org/abs/2107.00488)**.
 
 ### Directories
 
