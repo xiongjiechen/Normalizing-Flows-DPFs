@@ -35,11 +35,11 @@ This experiment evaluates the performance of **Conditional Normalizing Flow DPFs
 
 ### Scripts
 
--```[experiment_DiskTracking.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/experiment_DiskTracking.py)``` run this file to train, validate, and test the model.
--```[DPFs.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/DPFs.py)``` implementation of the proposed differentiable particle filtering algorithm, contains the training, validation, and testing functions.
--```[dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/dataset.py)``` implement a pytorch Dataset class for the disk tracking dataset.
--```[losses.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/losses.py)``` different optimisation objective for training the model.
--```[utils.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/utils.py)``` some useful functions.
+- ```[experiment_DiskTracking.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/experiment_DiskTracking.py)``` run this file to train, validate, and test the model.
+- ```[DPFs.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/DPFs.py)``` implementation of the proposed differentiable particle filtering algorithm, contains the training, validation, and testing functions.
+- ```[dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/dataset.py)``` implement a pytorch Dataset class for the disk tracking dataset.
+- ```[losses.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/losses.py)``` different optimisation objective for training the model.
+- ```[utils.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/utils.py)``` some useful functions.
 
 ## Arguments in the experiment
 
@@ -52,13 +52,13 @@ python experiment_DiskTracking.py --NF-dyn --NF-cond
 
 Below are some important arguments in the experiment:
 
--```--trainType``` whether to train the model in a supervised setting or semi-supervised setting, available options include: **DPF|SDPF**.
--```--NF-dyn``` set as **True** to enhance the dynamic model with normalizing flows, default as **False**.
--```--NF-cond``` set as **True** to propose particles using conditional normalizing flows, default as **False**.
--```--resampler_type``` type of particle resampler used in the experiment, available options include: **soft|ot**.
--```--lr``` learning rate when optimising the trained model.
--```--pos-noise``` position noise in the dynamic model.
--```--vel-noise``` action noise in the dynamic model.
+- ```--trainType``` whether to train the model in a supervised setting or semi-supervised setting, available options include: **DPF|SDPF**.
+- ```--NF-dyn``` set as **True** to enhance the dynamic model with normalizing flows, default as **False**.
+- ```--NF-cond``` set as **True** to propose particles using conditional normalizing flows, default as **False**.
+- ```--resampler_type``` type of particle resampler used in the experiment, available options include: **soft|ot**.
+- ```--lr``` learning rate when optimising the trained model.
+- ```--pos-noise``` position noise in the dynamic model.
+- ```--vel-noise``` action noise in the dynamic model.
 
 
 ## References 
