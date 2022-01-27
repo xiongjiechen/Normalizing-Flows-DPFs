@@ -68,10 +68,11 @@ The implemention of the included flow models are from this nice repository: [nor
 ## Citation
 If you find this code useful for your research, please cite our paper:
 ```
-@article{chen2021differentiable,
-    title={Differentiable Particle Filters through Conditional Normalizing Flow},
+@INPROCEEDINGS{
     author={Chen, Xiongjie and Wen, Hao and Li, Yunpeng},
-    journal={https://arxiv.org/abs/2107.00488},
-    year={2021}
+    booktitle={2021 IEEE 24th International Conference on Information Fusion (FUSION)},
+    title={[Differentiable Particle Filters through Conditional Normalizing Flow](https://ieeexplore.ieee.org/document/9626998)},
+    year={2021},
+    pages={1-6}
 }
 ```
