@@ -71,7 +71,7 @@ If you find this code useful for your research, please cite our paper:
 @INPROCEEDINGS{
     author={Chen, Xiongjie and Wen, Hao and Li, Yunpeng},
     booktitle={2021 IEEE 24th International Conference on Information Fusion (FUSION)},
-    title={[Differentiable Particle Filters through Conditional Normalizing Flow](https://ieeexplore.ieee.org/document/9626998)},
+    title={Differentiable Particle Filters through Conditional Normalizing Flow},
     year={2021},
     pages={1-6}
 }
