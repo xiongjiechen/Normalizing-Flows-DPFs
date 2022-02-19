@@ -62,11 +62,11 @@ def build_decoder(hidden_size):
 
 def build_likelihood(hidden_size, state_dim):
     likelihood=nn.Sequential(
-            nn.Linear(hidden_size+state_dim, 128),
+            nn.Linear(2*hidden_size, 64),
             nn.ReLU(True),
-            nn.Linear(128,128),
+            nn.Linear(64,64),
             nn.ReLU(True),
-            nn.Linear(128,1),
+            nn.Linear(64,1),
             nn.Sigmoid()
         )
     return likelihood
@@ -91,13 +91,14 @@ def build_transition_model(state_dim):
             nn.Linear(64, state_dim),)
     return transition
 
-def build_conditional_nf(n_sequence, hidden_size, state_dim, init_var=0.01):
+def build_conditional_nf(n_sequence, hidden_size, state_dim, init_var=0.01, prior_mean=0.0, prior_std=1.0):
     flows = [RealNVP_cond(dim=state_dim, obser_dim=hidden_size) for _ in range(n_sequence)]
 
     for f in flows:
         f.zero_initialization(var=init_var)
 
-    prior_init = MultivariateNormal(torch.zeros(state_dim).to(device), torch.eye(state_dim).to(device))
+    prior_init = MultivariateNormal(torch.zeros(state_dim).to(device) + prior_mean,
+                                    torch.eye(state_dim).to(device) * prior_std**2)
 
     cond_model = NormalizingFlowModel_cond(prior_init, flows, device=device)
 
@@ -131,37 +132,104 @@ def motion_update(particles, vel, pos_noise=20.0):
 
     return particles_update, position_noise
 
-class measurement_update_semi(nn.Module):
+class measurement_model_cosine_distance(nn.Module):
     def __init__(self, particle_encoder):
         super().__init__()
-        self.particle_encoder=particle_encoder
+        self.particle_encoder = particle_encoder
 
     def forward(self, encodings, update_particles):
         particle_encoder = self.particle_encoder.float()
-        e_s = particle_encoder(update_particles.float()) # shape: (batch, particle_num, hidden_size)
+        encodings_state = particle_encoder(update_particles.float()) # shape: (batch, particle_num, hidden_size)
 
-        # e_s =update_particles[:,:,:2]
+        encodings_obs = encodings[:, None, :].repeat(1, update_particles.shape[1],1)  # shape: (batch_size, particle_num, hidden_size)
 
-        encodings_input = encodings[:, None, :].repeat(1, update_particles.shape[1],
-                                                       1)  # shape: (batch_size, particle_num, hidden_size)
+        likelihood = 1 / (1e-7 + et_distance(encodings_obs, encodings_state))
 
-        # likelihood = 1/(1e-7+et_distance(encodings_input, e_s))
-        likelihood = 1 / (1e-7 + et_distance(encodings_input, e_s))
+        return likelihood.log()
+
+class measurement_model_NN(nn.Module):
+    def __init__(self, particle_encoder, likelihood_estimator):
+        super().__init__()
+        self.particle_encoder = particle_encoder
+        self.likelihood_estimator = likelihood_estimator
+
+    def forward(self, encodings, update_particles):
+        particle_encoder = self.particle_encoder.float()
+        encodings_state = particle_encoder(update_particles.float()) # shape: (batch, particle_num, hidden_size)
+
+        encodings_obs = encodings[:, None, :].repeat(1, update_particles.shape[1],1)  # shape: (batch_size, particle_num, hidden_size)
+
+        likelihood = self.likelihood_estimator(torch.cat([encodings_obs, encodings_state], dim=-1))
+
+        return likelihood[..., 0].log()
+
+class measurement_model_Gaussian(nn.Module):
+    def __init__(self, particle_encoder, gaussian_distribution):
+        super().__init__()
+        self.particle_encoder = particle_encoder
+        #gaussian_distribution = torch.distributions.multivariate_normal.MultivariateNormal(torch.zeros(noise_feature.shape[-1]), torch.eye(noise_feature.shape[-1])).to(device)
+        self.gaussian_distribution = gaussian_distribution
+    def forward(self, encodings, update_particles):
+        particle_encoder = self.particle_encoder.float()
+        encodings_state = particle_encoder(update_particles.float()) # shape: (batch, particle_num, hidden_size)
+
+        encodings_obs = encodings[:, None, :].repeat(1, update_particles.shape[1],1)  # shape: (batch_size, particle_num, hidden_size)
+
+        noise_feature = encodings_obs - encodings_state
+
+        likelihood = self.gaussian_distribution.log_prob(noise_feature)
+        likelihood = likelihood - likelihood.max(dim=-1, keepdims=True)[0]
 
         return likelihood
 
-def nf_dynamic_model(dynamical_nf, dynamic_particles, jac_shape, NF=False, forward=False):
+class measurement_model_cnf(nn.Module):
+    def __init__(self, particle_encoder, CNF):
+        super().__init__()
+        self.particle_encoder = particle_encoder
+        self.CNF = CNF
+
+    def forward(self, encodings, update_particles):
+        hidden_dim = encodings.shape[-1]
+        n_batch, n_particles = update_particles.shape[:2]
+
+        particle_encoder = self.particle_encoder.float()
+        encodings_state = particle_encoder(update_particles.float()) # shape: (batch, particle_num, hidden_size)
+        encodings_state = encodings_state.reshape([-1, hidden_dim])
+
+        encodings_obs = encodings[:, None, :].repeat(1, update_particles.shape[1],1)
+        encodings_obs = encodings_obs.reshape([-1, hidden_dim])
+
+        z, log_prob_z, log_det = self.CNF.forward(encodings_obs, encodings_state)
+        #print(z[0].abs().mean(dim=0), z[20].abs().mean(dim=0), z[10].abs().mean(dim=0), z[30].abs().mean(dim=0), log_prob_z.mean())
+        likelihood = (log_prob_z + log_det).reshape([n_batch, n_particles])
+        likelihood = likelihood - likelihood.max(dim=-1, keepdims=True)[0]
+
+        return likelihood
+
+def nf_dynamic_model(dynamical_nf, dynamic_particles, jac_shape, NF=False, forward=False, mean=None, std=None):
     if NF:
-        dimension = dynamic_particles.shape[-1]
-        particles_pred_flatten = dynamic_particles.reshape(-1, dimension)
-        if forward:
-            particles_update_nf, _, log_det = dynamical_nf.forward(particles_pred_flatten)
+        n_batch, n_particles, dimension = dynamic_particles.shape
+        if not forward:
+            dyn_particles_mean, dyn_particles_std = dynamic_particles.mean(dim=1, keepdim=True).detach().clone().repeat([1, n_particles, 1]), \
+                                                    dynamic_particles.std(dim=1, keepdim=True).detach().clone().repeat([1, n_particles, 1])
         else:
-            particles_update_nf, log_det = dynamical_nf.inverse(particles_pred_flatten)
+            dyn_particles_mean, dyn_particles_std = mean.detach().clone().repeat([1, n_particles, 1]),\
+                                                    std.detach().clone().repeat([1, n_particles, 1])
+        dyn_particles_mean_flatten, dyn_particles_std_flatten = dyn_particles_mean.reshape(-1, dimension), dyn_particles_std.reshape(-1,dimension)
+        context = torch.cat([dyn_particles_mean_flatten, dyn_particles_std_flatten], dim=-1)
+        #dynamic_particles = (dynamic_particles - dyn_particles_mean) / dyn_particles_std
+
+        particles_pred_flatten = dynamic_particles.reshape(-1, dimension)
+
+        if forward:
+            particles_update_nf, _, log_det = dynamical_nf.forward(particles_pred_flatten, context)
+        else:
+            particles_update_nf, log_det = dynamical_nf.inverse(particles_pred_flatten, context)
         jac_dynamic = -log_det
         jac_dynamic = jac_dynamic.reshape(dynamic_particles.shape[:2])
 
         nf_dynamic_particles = particles_update_nf.reshape(dynamic_particles.shape)
+        #nf_dynamic_particles = nf_dynamic_particles * dyn_particles_std + dyn_particles_mean
     else:
         nf_dynamic_particles=dynamic_particles
         jac_dynamic = torch.zeros(jac_shape).to(device)
@@ -171,8 +239,15 @@ def normalising_flow_propose(cond_model, particles_pred, obs, flow=RealNVP_cond,
 
     B, N, dimension = particles_pred.shape
 
+    pred_particles_mean, pred_particles_std = particles_pred.mean(dim=1, keepdim=True).detach().clone().repeat([1, N, 1]), \
+                                            particles_pred.std(dim=1, keepdim=True).detach().clone().repeat([1, N, 1])
+    dyn_particles_mean_flatten, dyn_particles_std_flatten = pred_particles_mean.reshape(-1, dimension), pred_particles_std.reshape(-1, dimension)
+    context = torch.cat([dyn_particles_mean_flatten, dyn_particles_std_flatten], dim=-1)
+    #particles_pred = (particles_pred - pred_particles_mean) / pred_particles_std
+
     particles_pred_flatten=particles_pred.reshape(-1,dimension)
     obs_reshape = obs[:, None, :].repeat([1,N,1]).reshape(B*N,-1)
+    obs_reshape = torch.cat([obs_reshape, context], dim=-1)
 
     particles_update_nf, log_det=cond_model.inverse(particles_pred_flatten, obs_reshape)
 
@@ -180,6 +255,7 @@ def normalising_flow_propose(cond_model, particles_pred, obs, flow=RealNVP_cond,
     jac=jac.reshape(particles_pred.shape[:2])
 
     particles_update_nf=particles_update_nf.reshape(particles_pred.shape)
+    #particles_update_nf = particles_update_nf * pred_particles_std + pred_particles_mean
 
     return particles_update_nf, jac
 
@@ -187,18 +263,21 @@ def proposal_likelihood(cond_model, dynamical_nf, measurement_model, particles_d
                         encodings, noise, jac_dynamic, NF, NF_cond, prototype_density):
     encodings_clone = encodings.detach().clone()
     encodings_clone.requires_grad = False
-    particles_dynamical_clone=particles_dynamical.detach().clone()
-    particles_dynamical_clone.requires_grad = False
 
     if NF_cond:
         propose_particle, jac_prop = normalising_flow_propose(cond_model, particles_dynamical, encodings_clone)
-        particle_prop_dyn_inv, jac_prop_dyn_inv = nf_dynamic_model(dynamical_nf, propose_particle,jac_dynamic.shape, NF=NF, forward=True)
-        prior_log = prototype_density(particle_prop_dyn_inv - (particles_physical - noise)) - jac_prop_dyn_inv #####
+        if NF:
+            particle_prop_dyn_inv, jac_prop_dyn_inv = nf_dynamic_model(dynamical_nf, propose_particle,jac_dynamic.shape, NF=NF, forward=True,
+                                                                       mean=particles_physical.mean(dim=1, keepdim=True),
+                                                                       std=particles_physical.std(dim=1, keepdim=True))
+            prior_log = prototype_density(particle_prop_dyn_inv - (particles_physical - noise)) - jac_prop_dyn_inv #####
+        else:
+            prior_log = prototype_density(propose_particle - (particles_physical - noise))
         propose_log = prototype_density(noise) + jac_dynamic + jac_prop
     else:
         propose_particle = particles_dynamical
         prior_log = prototype_density(noise) + jac_dynamic
         propose_log = prototype_density(noise) + jac_dynamic
 
-    lki_log = measurement_model(encodings, propose_particle).log()
+    lki_log = measurement_model(encodings, propose_particle)
     return propose_particle, lki_log, prior_log, propose_log
