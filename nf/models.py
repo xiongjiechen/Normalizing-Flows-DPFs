@@ -48,7 +48,7 @@ class NormalizingFlowModel_cond(nn.Module):
         for flow in self.flows:
             x, ld = flow.forward(x,obser)
             log_det += ld
-        z, prior_logprob = x, self.prior.log_prob(x)
+        z, prior_logprob = x, self.prior.log_prob(x.float())
         return z, prior_logprob, log_det
 
     def inverse(self, z, obser):
