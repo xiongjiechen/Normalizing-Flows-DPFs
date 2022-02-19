@@ -205,7 +205,7 @@ class ToyExample():
 
         position_noise = np.random.normal(loc=0, scale=pos_noise, size=(2))
 
-        velocity_noise = np.random.normal(loc=0, scale=2.,
+        velocity_noise = np.random.normal(loc=0, scale=4.,
                                           size=(2))
         q = 2. # the std of velocity noise
         new_state[:2] += position_noise
