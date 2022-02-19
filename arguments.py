@@ -8,28 +8,22 @@ def parse_args(args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', action='store_false', help='whether to use GPU')
     parser.add_argument('--gpu-index', type=int, default=0, help='index num of GPU to use')
-
     parser.add_argument('--trainType', dest='trainType', type=str,
                         default='DPF', choices=['DPF', 'SDPF', 'UDPF'],
                         help='train type: supervised, semi, unsupervised learning')
-
     parser.add_argument('--pretrain_ae', action='store_true',
                         help='pretrain of autoencoder model')
-
     parser.add_argument('--pretrain-NFcond', action='store_true',
                         help='pretrain of conditional normalising flow model')
-
     parser.add_argument('--e2e-train', action='store_false',
                         help='End to end training')
-
     parser.add_argument('--load-pretrainModel', action='store_true',
                         help='Load pretrain model')
 
-    parser.add_argument('--NF-dyn', action='store_true',
-                        help='train using normalising flow')
-
-    parser.add_argument('--NF-cond', action='store_true',
-                        help='train using conditional normalising flow')
+    parser.add_argument('--NF-dyn', action='store_true',help='train using normalising flow')
+    parser.add_argument('--NF-cond', action='store_true',help='train using conditional normalising flow')
+    parser.add_argument('--measurement',type=str, default='cos', help='|CNF|cos|NN')
+    parser.add_argument('--NF-lr', type=float, default=2.5,help='NF learning rate')
 
     parser.add_argument('--epsilon', type=float, default=0.1, help='epsilon in OT resampling')
     parser.add_argument('--scaling', type=float, default=0.75, help='scaling in OT resampling')
@@ -50,8 +44,7 @@ def parse_args(args=None):
     parser.add_argument('--hiddensize', type=int, default=32, help='hidden size')  # origin: 32
     parser.add_argument('--lr', type=float, default=1e-4, # one object: 1e-3, 3e-4
                         help='learning rate') # origin: 1e-3, 1e-4
-    parser.add_argument('--NF-lr', type=float, default=0.25,
-                        help='NF learning rate')
+
     parser.add_argument('--optim', type=str, default='Adam',
                         help='type of optim')
     parser.add_argument('--num_epochs', type=int, default=300, help='num epochs') # origin: 20, 13, 150
@@ -74,7 +67,6 @@ def parse_args(args=None):
     parser.add_argument('--pos-noise', dest='pos_noise', type=float,
                         default=2.0,
                         help='sigma for the positional process noise')
-
     parser.add_argument('--vel-noise', dest='vel_noise', type=float,
                         default=2.0,
                         help='sigma for the velocity noise')
@@ -84,6 +76,7 @@ def parse_args(args=None):
 
     parser.add_argument('--testing', action='store_true',
                         help='Check testing performance')
+    parser.add_argument('--model-path', type=str, default='./model/e2e_model_bestval_e2e.pth', help='path of saved model')
 
     args = parser.parse_args()
 

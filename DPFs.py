@@ -22,6 +22,7 @@ class DPF(nn.Module):
         self.param = args
         self.NF = args.NF_dyn
         self.NFcond = args.NF_cond
+        self.measurement = args.measurement
         self.hidden_size = args.hiddensize # origin: 32
         self.state_dim = 2 #4
         self.lr = args.lr
@@ -59,22 +60,35 @@ class DPF(nn.Module):
         self.likelihood_est = build_likelihood(self.hidden_size, self.state_dim)
         self.likelihood_est_optim = torch.optim.Adam(self.likelihood_est.parameters(), lr=self.lr)
 
+        self.gaussian_distribution = torch.distributions.MultivariateNormal(torch.ones(self.hidden_size).to(device),
+                                                                                                100*torch.eye(self.hidden_size).to(device))
+
         self.particle_encoder = build_particle_encoder(self.hidden_size,self.state_dim)
         self.particle_encoder_optim = torch.optim.Adam(self.particle_encoder.parameters(), lr=self.lr)
 
         self.transition_model = build_transition_model(self.state_dim)
         self.transition_model_optim = torch.optim.Adam(self.transition_model.parameters(), lr=self.lr)
 
-        self.cond_model = build_conditional_nf(self.n_sequence, self.hidden_size, self.state_dim, init_var=0.01)
-        self.cond_model_optim = torch.optim.Adam(self.cond_model.parameters(), lr=self.NF_lr*self.lr)
-
-        # normalising flow dynamic initialisation
-        self.nf_dyn = build_dyn_nf(self.n_sequence, self.hidden_size, self.state_dim, init_var=0.01)
-        self.nf_dyn_optim = torch.optim.Adam(self.nf_dyn.parameters(), lr=self.NF_lr*self.lr)
-
         self.motion_update=motion_update
 
-        self.measurement_model = measurement_update_semi(self.particle_encoder)
+        # normalising flow dynamic initialisation
+        self.nf_dyn = build_conditional_nf(self.n_sequence, 2 * self.state_dim, self.state_dim, init_var=0.01)
+        self.nf_dyn_optim = torch.optim.Adam(self.nf_dyn.parameters(), lr=self.NF_lr*self.lr)
+
+        self.cond_model = build_conditional_nf(self.n_sequence, 2 * self.state_dim + self.hidden_size, self.state_dim, init_var=0.01)
+        self.cond_model_optim = torch.optim.Adam(self.cond_model.parameters(), lr=self.NF_lr*self.lr)
+
+        self.cnf_measurement = build_conditional_nf(self.n_sequence, self.hidden_size, self.hidden_size, init_var=0.01, prior_std=2.5)
+        self.cnf_measurement_optim = torch.optim.Adam(self.cnf_measurement.parameters(), lr=self.lr)
+
+        if self.measurement=='CNF':
+            self.measurement_model = measurement_model_cnf(self.particle_encoder, self.cnf_measurement)
+        elif self.measurement=='cos':
+            self.measurement_model = measurement_model_cosine_distance(self.particle_encoder)
+        elif self.measurement=='NN':
+            self.measurement_model = measurement_model_NN(self.particle_encoder, self.likelihood_est)
+        elif self.measurement=='gaussian':
+            self.measurement_model = measurement_model_Gaussian(self.particle_encoder, self.gaussian_distribution)
 
         self.prototype_density=compute_normal_density(pos_noise=self.pos_noise, vel_noise= self.vel_noise)
 
@@ -89,7 +103,7 @@ class DPF(nn.Module):
         # modify the dimension of hidden state
         vel = state[:, :, 2:] + torch.normal(0.0, 4.0, (state[:, :, 2:]).shape).to(device)
 
-        particle_list, particle_weight_list, noise_list, likelihood_list, init_weights_log, index_list, jac_list, prior_list = self.filtering_pos(image, start_state, vel)
+        particle_list, particle_weight_list, noise_list, likelihood_list, init_weights_log, index_list, jac_list, prior_list, obs_likelihood = self.filtering_pos(image, start_state, vel)
 
         # mask
         if train:
@@ -104,10 +118,9 @@ class DPF(nn.Module):
             lamda1 = 1.0
             lamda2 = 0.01
             lamda3 = 2.0
-
             loss_pseud_lik = None
 
-            total_loss = lamda1 * loss_sup #+ lamda3 * loss_ae
+            total_loss = lamda1 * loss_sup + lamda3 * loss_ae #
 
         elif self.param.trainType == 'SDPF':
             lamda1 = 10.0
@@ -125,7 +138,7 @@ class DPF(nn.Module):
         else:
             raise ValueError('Please select the training type in DPF (supervised learning) and SDPF (semi-supervised learning)')
 
-        return total_loss, loss_sup, loss_pseud_lik, loss_ae, predictions, particle_list, particle_weight_list, state, start_state, image, likelihood_list, noise_list
+        return total_loss, loss_sup, loss_pseud_lik, loss_ae, predictions, particle_list, particle_weight_list, state, start_state, image, likelihood_list, noise_list, obs_likelihood
 
     def filtering_pos(self, obs, start_state_vs, vel_input):
 
@@ -136,7 +149,8 @@ class DPF(nn.Module):
 
         initial_particles, init_weights_log=particle_initialization(start_state, self.param.width, self.num_particle, self.state_dim, init_with_true_state=self.param.init_with_true_state)
 
-        initial_particle_probs = init_weights_log.exp()
+        initial_particle_probs = normalize_log_probs(init_weights_log)
+        obs_likelihood = 0.0
 
         particles = initial_particles
         particle_probs = initial_particle_probs
@@ -147,7 +161,7 @@ class DPF(nn.Module):
             index_p = (torch.arange(self.num_particle)+self.num_particle* torch.arange(batch_size)[:, None].repeat((1, self.num_particle))).type(torch.int64).to(device)
             ESS= torch.mean(1/torch.sum(particle_probs**2, dim=-1))
 
-            if ESS<1.0*self.num_particle:
+            if ESS<0.5*self.num_particle:
                 particles_resampled, particle_probs_resampled, index_p=self.resampler(particles, particle_probs)
                 particle_probs_resampled = particle_probs_resampled.log()
             else:
@@ -173,7 +187,8 @@ class DPF(nn.Module):
 
             particles = propose_particle
             particle_probs = particle_probs_resampled
-            particle_probs = normalize_log_probs(particle_probs)
+            obs_likelihood += particle_probs.mean()
+            particle_probs = normalize_log_probs(particle_probs)+1e-12
 
             if step ==0:
                 particle_list= particles[:, None, :, :]
@@ -197,7 +212,7 @@ class DPF(nn.Module):
                     jac_list = torch.cat([jac_list, jac[:,None]], dim=1)
                     prior_list = torch.cat([prior_list, prior_log[:, None]], dim=1)
 
-        return particle_list, particle_probs_list, noise_list, likelihood_list, init_weights_log, index_list, jac_list, prior_list
+        return particle_list, particle_probs_list, noise_list, likelihood_list, init_weights_log, index_list, jac_list, prior_list, obs_likelihood
 
     def get_mask(self):
 
@@ -221,6 +236,7 @@ class DPF(nn.Module):
 
         self.cond_model.train()
         self.nf_dyn.train()
+        self.cnf_measurement.train()
 
     def set_eval_mode(self):
         self.encoder.eval()
@@ -231,6 +247,7 @@ class DPF(nn.Module):
 
         self.cond_model.eval()
         self.nf_dyn.eval()
+        self.cnf_measurement.eval()
 
     def set_zero_grad(self):
         self.encoder_optim.zero_grad()
@@ -241,6 +258,7 @@ class DPF(nn.Module):
 
         self.cond_model_optim.zero_grad()
         self.nf_dyn_optim.zero_grad()
+        self.cnf_measurement.zero_grad()
 
     def set_optim_step(self):
         self.encoder_optim.step()
@@ -251,6 +269,7 @@ class DPF(nn.Module):
 
         self.cond_model_optim.step()
         self.nf_dyn_optim.step()
+        self.cnf_measurement_optim.step()
 
     def adjust_learning_rate(self, epoch):
         """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
@@ -394,10 +413,10 @@ class DPF(nn.Module):
             # train
             self.set_train_mode()
             total_sup_loss = []
-
+            total_ae_loss = []
             for iteration, inputs in enumerate(train_loader):
 
-                loss_all, loss_sup, loss_pseud_lik, loss_ae, predictions, particle_list, particle_weight_list, state, start_state, image, likelihood_list, noise_list = self.forward(
+                loss_all, loss_sup, loss_pseud_lik, loss_ae, predictions, particle_list, particle_weight_list, state, start_state, image, likelihood_list, noise_list, obs_likelihood = self.forward(
                     inputs, train=True)
 
                 self.set_zero_grad()
@@ -410,11 +429,13 @@ class DPF(nn.Module):
                         f"loss_sup: {loss_sup.detach().cpu().numpy()}, loss_pseud_lik: {loss_pseud_lik.detach().cpu().numpy()}, loss_ae: {loss_ae.detach().cpu().numpy()}")
 
                 total_sup_loss.append(loss_sup.detach().cpu().numpy())
+                total_ae_loss.append(loss_ae.detach().cpu().numpy())
 
             train_loss_sup_mean = np.mean(total_sup_loss)
+            total_ae_loss_mean = np.mean(total_ae_loss)
             logger.add_scalar('Sup_loss/loss', train_loss_sup_mean, epoch)
 
-            print(f"End-to-end loss: epoch: {epoch}, loss: {train_loss_sup_mean}, loss_ae: {loss_ae.detach().cpu().numpy()}")
+            print(f"End-to-end loss: epoch: {epoch}, loss: {train_loss_sup_mean}, loss_ae: {total_ae_loss_mean}, obs_likelihood: {obs_likelihood}")
 
             # evaluate
             self.set_eval_mode()
@@ -425,13 +446,13 @@ class DPF(nn.Module):
 
                     self.set_zero_grad()
 
-                    loss_all, loss_sup, loss_pseud_lik, loss_ae, predictions, particle_list, particle_weight_list, state, start_state, image, likelihood_list, noise_list = self.forward(
+                    loss_all, loss_sup, loss_pseud_lik, loss_ae, predictions, particle_list, particle_weight_list, state, start_state, image, likelihood_list, noise_list,obs_likelihood = self.forward(
                         inputs, train=False)
                     total_sup_eval_loss.append(loss_sup.detach().cpu().numpy())
 
                 eval_loss_sup_mean = np.mean(total_sup_eval_loss)
                 logger.add_scalar('Sup_loss_eval/loss', eval_loss_sup_mean, epoch)
-                print(f"End-to-end loss evaluation: epoch: {epoch}, loss: {eval_loss_sup_mean}", self.NF)
+                print(f"End-to-end loss evaluation: epoch: {epoch}, loss: {eval_loss_sup_mean}, obs_likelihood: {obs_likelihood}", self.NF)
 
             eval_loss_epoch.append(eval_loss_sup_mean)##############
             np.save(os.path.join('logs', run_id, "data", 'eval_loss_epoch.npy'), eval_loss_epoch)
@@ -440,9 +461,10 @@ class DPF(nn.Module):
                 best_eval_loss = eval_loss_sup_mean
                 best_epoch = epoch
                 print('Save best validation model')
-                np.savez(os.path.join('logs', run_id, "data", 'test_result_best.npz'),
+                np.savez(os.path.join('logs', run_id, "data", 'eval_result_best.npz'),
                          particle_list=particle_list.detach().cpu().numpy(),
                          particle_weight_list=particle_weight_list.detach().cpu().numpy(),
+                         likelihood_list = likelihood_list.detach().cpu().numpy(),
                          pred=predictions.detach().cpu().numpy(),
                          state=state.detach().cpu().numpy(),
                          loss= total_sup_eval_loss)
@@ -461,9 +483,11 @@ class DPF(nn.Module):
                     'cond_model_optim': self.cond_model_optim.state_dict(),
                     'nf_dyn': self.nf_dyn.state_dict(),
                     'nf_dyn_optim': self.nf_dyn_optim.state_dict(),
+                    'cnf_measurement': self.cnf_measurement.state_dict(),
+                    'cnf_measurement_optim': self.cnf_measurement_optim.state_dict(),
                     "epoch": epoch
                 }
-                torch.save(checkpoint_e2e, f'./model/e2e_model_bestval_e2e.pth')
+                torch.save(checkpoint_e2e, os.path.join('logs', run_id, "models", 'e2e_model_bestval_e2e.pth'))
 
     def load_model(self, file_name):
         ckpt_e2e = torch.load(file_name)
@@ -482,6 +506,8 @@ class DPF(nn.Module):
         self.nf_dyn.load_state_dict(ckpt_e2e['nf_dyn'])
         self.cond_model_optim.load_state_dict(ckpt_e2e['cond_model_optim'])
         self.nf_dyn_optim.load_state_dict(ckpt_e2e['nf_dyn_optim'])
+        self.cnf_measurement.load_state_dict(ckpt_e2e['cnf_measurement'])
+        self.cnf_measurement_optim.load_state_dict(ckpt_e2e['cnf_measurement_optim'])
 
         epoch = ckpt_e2e['epoch']
 
@@ -514,13 +540,13 @@ class DPF(nn.Module):
             print('End-to-end training!')
             self.e2e_train(train_loader, valid_loader, start_epoch=start_epoch, epoch_num=epoch_num, logger=logger, run_id = run_id)
 
-    def testing(self, test_loader, run_id):
+    def testing(self, test_loader, run_id, model_path='./model/e2e_model_bestval_e2e.pth'):
 
         params = self.param
         if self.param.testing:
             print('Testing!')
             print('Load trained model')
-            self.load_model('./model/e2e_model_bestval_e2e.pth')
+            self.load_model(os.path.join(model_path, 'e2e_model_bestval_e2e.pth'))
 
         for epoch in range(1):
             # test
@@ -532,7 +558,7 @@ class DPF(nn.Module):
 
                     self.set_zero_grad()
 
-                    loss_all, loss_sup, loss_pseud_lik, loss_ae, predictions, particle_list, particle_weight_list, state, start_state, image, likelihood_list, noise_list = self.forward(
+                    loss_all, loss_sup, loss_pseud_lik, loss_ae, predictions, particle_list, particle_weight_list, state, start_state, image, likelihood_list, noise_list,obs_likelihood = self.forward(
                         inputs, train=False)
                     total_sup_eval_loss.append(loss_sup.detach().cpu().numpy())
 
@@ -542,6 +568,7 @@ class DPF(nn.Module):
             np.savez(os.path.join('logs', run_id, "data",'test_result.npz'),
                      particle_list= particle_list.detach().cpu().numpy(),
                      particle_weight_list=particle_weight_list.detach().cpu().numpy(),
+                     likelihood_list=likelihood_list.detach().cpu().numpy(),
                      state=state.detach().cpu().numpy(),
                      pred=predictions.detach().cpu().numpy(),
                      images=image.detach().cpu().numpy(),
