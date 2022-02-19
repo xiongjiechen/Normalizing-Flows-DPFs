@@ -208,34 +208,41 @@ def transport_from_potentials(x, f, g, eps, logw, n, device='cuda'):
     transport_matrix = torch.exp(temp)
 
     return transport_matrix
-
-
-def transport(x, logw, eps, scaling, threshold, max_iter, n, device='cuda'):
+def transport_function(x, logw, eps, scaling, threshold, max_iter, n, device='cuda'):
     eps = torch.tensor(eps, dtype=torch.float).to(device)
     float_n = torch.tensor(n, dtype=torch.float).to(device)
     log_n = torch.log(float_n).to(device)
     uniform_log_weight = -log_n * torch.ones_like(logw).to(device)
     dimension = torch.tensor(x.shape[-1]).to(device)
+
     centered_x = x - x.mean(dim=1, keepdim=True).detach().clone()
     diameter_value = diameter(x, x)
 
     scale = diameter_value.reshape([-1, 1, 1]) * torch.sqrt(dimension)
     scaled_x = centered_x / scale.detach().clone()
-
     alpha, beta, _, _, _ = sinkhorn_potentials(logw, scaled_x, uniform_log_weight, scaled_x, eps, scaling, threshold,
                                                max_iter, device=device)
-    # print(alpha,beta)
     transport_matrix = transport_from_potentials(scaled_x, alpha, beta, eps, logw, float_n, device=device)
 
-    # def grad(d_transport):
-    #     d_transport = tf.clip_by_value(d_transport, -1., 1.)
-    #     # mask = logw > MIN_RELATIVE_LOG_WEIGHT * tf.math.log(float_n)  # the other particles have died out really.
-    #     dx, dlogw = tf.gradients(transport_matrix, [x, logw], d_transport)
-    #     # dlogw = tf.where(mask, dlogw, 0.)
-    #     # dx = tf.where(tf.expand_dims(mask, -1), dx, 0.)  # set all dimensions of the same particle to 0.
-    #     return dx, dlogw, None, None, None, None, None
+    return transport_matrix
 
-    return transport_matrix.detach().clone()  # grad
+def transport_grad(x_original, logw, eps, scaling, threshold, max_iter, n, device='cuda', grad_output=None):
+    transport_matrix=transport_function(x_original, logw, eps, scaling, threshold, max_iter, n).requires_grad_()
+    transport_matrix.backward(grad_output)
+    return x_original.grad, logw.grad
+
+class transport(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x, logw, x_, logw_, transport_matrix_):
+        ctx.save_for_backward(transport_matrix_, x_, logw_)
+        return transport_matrix_.clone()  # grad
+
+    @staticmethod
+    def backward(ctx, d_transport):
+        d_transport=torch.clamp(d_transport, -1., 1.)
+        transport_matrix_, x_, logw_ = ctx.saved_tensors
+        dx, dlogw = torch.autograd.grad(transport_matrix_, [x_, logw_], grad_outputs=d_transport, retain_graph=True)
+        return None, None, None, None, None
 
 
 def resample(tensor, new_tensor, flags):
@@ -254,20 +261,17 @@ def apply_transport_matrix(particles, weights, log_weights, transport_matrix, fl
     resampled_weights = resample(weights, uniform_weights, flags)
     resampled_log_weights = resample(log_weights, uniform_log_weights, flags)
 
-    # additional_variables = {}
-
-    # for additional_state_variable in state.ADDITIONAL_STATE_VARIABLES:
-    #     state_variable = getattr(state, additional_state_variable)
-    #     transported_state_variable = tf.linalg.matmul(transport_matrix, state.particles)
-    #     additional_variables[additional_state_variable] = resample(state_variable, transported_state_variable, flags)
-
     return resampled_particles, resampled_weights, resampled_log_weights
 
 
 def OT_resampling(x, logw, eps, scaling, threshold, max_iter, n, device='cuda',
                   flag=torch.tensor(True, requires_grad=False)):
     flag = flag.to(device)
-    transport_matrix = transport(x, logw, eps, scaling, threshold, max_iter, n, device=device)
+    x_, logw_ = x.detach().clone().requires_grad_(), logw.detach().clone().requires_grad_()
+    transport_matrix_ = transport_function(x_, logw_, eps, scaling, threshold, max_iter, n, device)
+
+    calculate_transport=transport.apply
+    transport_matrix = calculate_transport(x, logw, x_, logw_, transport_matrix_)
     resampled_particles, resampled_weights, resampled_log_weights = apply_transport_matrix(x, logw.exp(), logw,
                                                                                            transport_matrix, flag)
     return resampled_particles, resampled_weights, resampled_log_weights
