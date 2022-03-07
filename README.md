@@ -98,7 +98,7 @@ python experiment_DiskTracking.py --measurement CRNVP
     
 #### Available measurement models
     
-- ```--measurement``` select the measurement model for the evaluated methods, available options: **| cos | gaussian | NN | CGLOW | CRNVP |**
+- ```--measurement``` selects the measurement model for the evaluated methods, available options: **| cos | gaussian | NN | CGLOW | CRNVP |**
     <br/>
     
     -  For measurement models built with conditional normalizing flows, both conditional Real-NVP **(CRNVP)** and conditional-GLOW **(CGLOW)** are available options in this project, but only the performance of conditional Real-NVP is reported in the paper since conditional GLOW was found to produce slightly higher prediction error (RMSE) than conditional Real-NVP, we are now analysing intermediate results to find out the reason for this.     
