@@ -14,7 +14,7 @@ This experiment evaluates the performance of ***[Conditional Normalizing Flow DP
 
 ## Prerequisites
 
-### Python Packages 
+### Install python Packages 
 
 To install the required python packages, run the following command:
 
@@ -27,9 +27,10 @@ pip install -r requirements.txt
 Run the file [./data/disk/create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py) to create the disk tracking dataset for training, validation and testing sets. The generated dataset will be stored in the folder ```./data/disk/``` as default. Some optional parameters are listed as follows:
 - ```--num-distractors``` number of distractors in the observation image. 
 - ```--pos_noise``` standard deviation of target positions when generating trajectories.
+- ```--vel-noise``` action noise of moving disks.
 - ```--num_examples``` number of trajectory samples being generated. 
 - ```--sequence_length``` length of generated trajectories.
-- ```--out_dir``` specify the directory to store the generated datasets.
+- ```--out_dir``` specifies the directory to store the generated dataset.
 
 ## Project Structure
 
@@ -45,29 +46,24 @@ Run the file [./data/disk/create_toy_dataset.py](https://github.com/xiongjiechen
 
 - [experiment_DiskTracking.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/experiment_DiskTracking.py): run this file to train, validate, and test the model.
 - [DPFs.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/DPFs.py): implementation of different differentiable particle filtering algorithms evaluated in the papers, contains functions for training, validating, and testing these methods.
-- [dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/dataset.py): create a pytorch Dataset object for the disk tracking dataset.
+- [dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/dataset.py): creates a pytorch Dataset object for the disk tracking dataset.
 - [losses.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/losses.py): different optimisation objectives for training the model.
 - [utils.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/utils.py): useful functions to save space in the main file.
 - [arguments.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/arguments.py): configurations of the experiment.
 
 
 ## Arguments in the experiment
-<details>
-<br/>
-<summary>Basic arguments in the experiment</summary>
+#### Basic arguments in the experiment
     
 - ```--trainType``` whether to train the model in the supervised setting or the semi-supervised setting, available options: **DPF|SDPF**.
 - ```--lr``` learning rate when optimising the trained model.
 - ```--batchsize``` batch size of training dataloader.
 - ```--num_epochs``` number of training epochs.
 - ```--resampler_type``` type of particle resampler used in the experiment, available options: **soft|ot**.
-- ```--pos-noise``` position noise in the dynamic model.
-- ```--vel-noise``` action noise in the dynamic model.
 - ```--num-particles``` number of particles used in the experiment.
 - ```--testing``` test a model saved in a specified path.
 - ```--model-path``` path of the tested model.
     
-</details>
 
 <details>
 <summary>Arguments for the CNF-DPF setup</summary>
@@ -94,24 +90,30 @@ Related arguments:
 
 The DPF-CM is proposed in the paper **Conditional Measurement Density Estimation in Sequential Monte Carlo Methods via Normalizing Flow**, where conditional normalizing flows are employed to estimate the likelihood of observations given states. 
     
-To reproduce the epxeriment results of the DPF-CM reported in the paper **Conditional Measurement Density Estimation in Sequential Monte Carlo Methods via Normalizing Flow**, run the following command:
+To reproduce the epxeriment results of the DPF-CM reported in the paper, run the following command:
 
 ```
 python experiment_DiskTracking.py --measurement CRNVP
 ```
-
-Related arguments:
     
-- ```--measurement``` select the measurement model for the evaluated methods, available options: **|CRNVP|cos|NN|CGLOW|gaussian|**
+#### Available measurement models
+    
+- ```--measurement``` select the measurement model for the evaluated methods, available options: **| cos | gaussian | NN | CGLOW | CRNVP |**
+    <br/>
+    
+    -  For measurement models built with conditional normalizing flows, both conditional Real-NVP **(CRNVP)** and conditional-GLOW **(CGLOW)** are available options in this project, but only the performance of conditional Real-NVP is reported in the paper since conditional GLOW was found to produce slightly higher prediction error (RMSE) than conditional Real-NVP, we are now analysing intermediate results to find out the reason for this.     
+    - The option **| cos |** refers to the measurement model proposed in the paper **[End-to-End Semi-supervised Learning for Differentiable Particle Filters](https://ieeexplore.ieee.org/abstract/document/9561889)**, where the likelihood of observation given states is estimated by the cosine similarity between the observation feature and the state feature. 
+    - The option **| gaussian |** is the measurement model used in the robot localization experiment in the paper **[Differentiable particle filtering via entropy-regularized optimal transport](http://proceedings.mlr.press/v139/corenflos21a.html)**. This measurement model estimates the likelihood by computing the Gaussian density of observation feature conditioned on the state feature.    
+    - The option **| NN |** denotes the measurement model proposed in the paper **[Particle Filter Networks with Application to Visual Localization
+](https://arxiv.org/abs/1805.08975)**, it considers the observation likelihoods as the outputs of a neural network , whose input is the concatenation of feature maps of observations and states.
 
-For measurement models built with conditional normalizing flows, both conditional Real-NVP and conditional-GLOW are available options in this project, but only the performance of conditional Real-NVP is reported in the paper since conditional GLOW was found to produce slightly higher prediction error than conditional Real-NVP, we are now analysing intermediate results to find out the reason for this. The **cos** option refers to the measurement model proposed in the paper **[End-to-End Semi-supervised Learning for Differentiable Particle Filters
-](https://ieeexplore.ieee.org/abstract/document/9561889)**
+Code for the above measurement models can be found in the python script ```./model/models.py```
     
 </details>
 
 ## References 
 ### Code
-The implemention of the included flow models are from this nice repository: [normalizing-flows](https://github.com/tonyduan/normalizing-flows) by [tonyduan](https://github.com/tonyduan).
+The implemention of included normalizing flow models are from the repository: [normalizing-flows](https://github.com/tonyduan/normalizing-flows) by [tonyduan](https://github.com/tonyduan), the implementation of the conditional GLOW model is based on the repository [Conditional-GLOW](https://github.com/yolu1055/conditional-glow) by [You Lu](https://github.com/yolu1055).
 
 ## Citation
 If you find this code useful for your research, please cite our paper:
