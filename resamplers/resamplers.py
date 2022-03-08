@@ -242,7 +242,7 @@ class transport(torch.autograd.Function):
         d_transport=torch.clamp(d_transport, -1., 1.)
         transport_matrix_, x_, logw_ = ctx.saved_tensors
         dx, dlogw = torch.autograd.grad(transport_matrix_, [x_, logw_], grad_outputs=d_transport, retain_graph=True)
-        return dx, dlogw, None, None, None
+        return None, None, None, None, None
 
 
 def resample(tensor, new_tensor, flags):
