@@ -2,8 +2,9 @@ import torch
 from torch import nn
 from nf.models import NormalizingFlowModel,NormalizingFlowModel_cond
 from torch.distributions import MultivariateNormal
-from util import et_distance
+from utils import et_distance
 from nf.flows import *
+from nf.cglow.CGlowModel import CondGlowModel
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 def build_encoder(hidden_size):
@@ -32,9 +33,64 @@ def build_encoder(hidden_size):
         )
     return encode
 
+def build_encoder_cglow(hidden_size):
+    encode=nn.Sequential(  # input: 3*120*120, 3*128*128
+            nn.Conv2d(3, 16, kernel_size=4, stride=2, padding=1, bias=False),  # 16*60*60, 64
+            nn.ReLU(True),
+            nn.BatchNorm2d(16),
+            nn.Conv2d(16, 32, kernel_size=4, stride=2, padding=1, bias=False),  # 32*30*30, 32
+            nn.ReLU(True),
+            nn.BatchNorm2d(32),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1, bias=False),  # 64*15*15, 16
+            nn.ReLU(True),
+            nn.BatchNorm2d(64),
+            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1, bias=False),  # 64*15*15, 8
+            nn.ReLU(True),
+            nn.BatchNorm2d(128),
+            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1, bias=False),  # 64*15*15, 4
+            nn.ReLU(True),
+            nn.BatchNorm2d(256),
+            nn.Flatten(),
+            # nn.Dropout2d(p=1 - args.dropout_keep_ratio),
+            nn.Linear(256 * 4 * 4, 192),
+            # nn.ReLU(True),
+            # nn.Linear(256, self.hidden_size),
+            # nn.ReLU(True) # output size: 32
+        )
+    return encode
+
 def build_decoder(hidden_size):
     decode=nn.Sequential(
             nn.Linear(hidden_size, 256*4*4),
+            # nn.ReLU(True),
+            # nn.Linear(256, 64 * 15 * 15),
+            # nn.ReLU(True),
+            nn.Unflatten(-1,(256, 4, 4)), # -1 means the last dim, (64, 15, 15)
+
+            nn.ConvTranspose2d(256, 128, kernel_size=4, padding=1, stride=2, bias=False),  # (32, 30,30), 8
+            nn.ReLU(True),
+            nn.BatchNorm2d(128),
+
+            nn.ConvTranspose2d(128, 64, kernel_size=4, padding=1, stride=2, bias=False),  # (32, 30,30), 16
+            nn.ReLU(True),
+            nn.BatchNorm2d(64),
+
+            nn.ConvTranspose2d(64, 32, kernel_size=4, padding=1, stride=2, bias=False),  # (32, 30,30), 32
+            nn.ReLU(True),
+            nn.BatchNorm2d(32),
+            nn.ConvTranspose2d(32, 16, kernel_size=4, padding=1, stride=2, bias=False),  # (16, 60,60), 64
+            nn.ReLU(True),
+            nn.BatchNorm2d(16),
+            nn.ConvTranspose2d(16, 3, kernel_size=4, padding=1, stride=2, bias=False),  # (3, 120, 120), 128
+            nn.BatchNorm2d(3),
+            nn.Sigmoid()
+        )
+    return decode
+
+
+def build_decoder_cglow(hidden_size):
+    decode=nn.Sequential(
+            nn.Linear(192, 256*4*4),
             # nn.ReLU(True),
             # nn.Linear(256, 64 * 15 * 15),
             # nn.ReLU(True),
@@ -82,6 +138,17 @@ def build_particle_encoder(hidden_size, state_dim):
         )
     return particle_encode
 
+def build_particle_encoder_cglow(hidden_size, state_dim):
+    particle_encode=nn.Sequential(
+            nn.Linear(state_dim, 16),
+            nn.ReLU(),
+            nn.Linear(16, 32),
+            nn.ReLU(),
+            nn.Linear(32, 192),
+            # nn.ReLU()
+        )
+    return particle_encode
+
 def build_transition_model(state_dim):
     transition=nn.Sequential(
             nn.Linear(state_dim, 64),
@@ -104,6 +171,10 @@ def build_conditional_nf(n_sequence, hidden_size, state_dim, init_var=0.01, prio
 
     return cond_model
 
+def build_conditional_glow(args):
+    conditional_glow = CondGlowModel(args)
+
+    return conditional_glow
 
 def build_dyn_nf(n_sequence, hidden_size, state_dim, init_var=0.01):
     flows_dyn = [RealNVP(dim=state_dim) for _ in range(n_sequence)]
@@ -206,10 +277,35 @@ class measurement_model_cnf(nn.Module):
 
         return likelihood
 
+class measurement_model_cglow(nn.Module):
+    def __init__(self, particle_encoder, CGLOW):
+        super().__init__()
+        self.particle_encoder = particle_encoder
+        self.CGLOW = CGLOW
+
+    def forward(self, encodings, update_particles):
+        n_batch, n_particles, state_dim = update_particles.shape
+
+        update_particles = update_particles.reshape([-1,state_dim])
+
+        particle_encoder = self.particle_encoder.float()
+        encodings_state = particle_encoder(update_particles.float())
+        encodings_state = encodings_state.reshape([n_batch * n_particles,3,8,8])
+
+        encodings_obs = encodings[:, None, ...].repeat(1, n_particles, 1)
+        encodings_obs = encodings_obs.reshape([-1]+list(encodings_state.shape[-3:]))
+
+        z, nll = self.CGLOW(encodings_state, encodings_obs)
+        #print(z[0].abs().mean(dim=0), z[20].abs().mean(dim=0), z[10].abs().mean(dim=0), z[30].abs().mean(dim=0), log_prob_z.mean())
+        likelihood = -nll.reshape([n_batch, n_particles])
+        likelihood = likelihood - likelihood.max(dim=-1, keepdims=True)[0]
+
+        return likelihood
+
 def nf_dynamic_model(dynamical_nf, dynamic_particles, jac_shape, NF=False, forward=False, mean=None, std=None):
     if NF:
         n_batch, n_particles, dimension = dynamic_particles.shape
-        if not forward:
+        if mean is None:
             dyn_particles_mean, dyn_particles_std = dynamic_particles.mean(dim=1, keepdim=True).detach().clone().repeat([1, n_particles, 1]), \
                                                     dynamic_particles.std(dim=1, keepdim=True).detach().clone().repeat([1, n_particles, 1])
         else:
