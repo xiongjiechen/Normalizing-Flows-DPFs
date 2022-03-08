@@ -44,7 +44,7 @@ Run the file [./data/disk/create_toy_dataset.py](https://github.com/xiongjiechen
 
 ### Python scripts
 
-- [experiment_DiskTracking.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/experiment_DiskTracking.py): run this file to train, validate, and test the model.
+- [main_DiskTracking.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/main_DiskTracking.py): run this file to train, validate, and test the model.
 - [DPFs.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/DPFs.py): implementation of different differentiable particle filtering algorithms evaluated in the papers, contains functions for training, validating, and testing these methods.
 - [dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/dataset.py): creates a pytorch Dataset object for the disk tracking dataset.
 - [losses.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/losses.py): different optimisation objectives for training the model.
@@ -74,7 +74,7 @@ The CNF-DPF is proposed in the paper **[Differentiable Particle Filters through 
 To evaluate the performance of the CNF-DPF, run the following command:
 
 ```
-python experiment_DiskTracking.py --NF-dyn --NF-cond 
+python main_DiskTracking.py --NF-dyn --NF-cond 
 ```
 
 Related arguments:
@@ -93,7 +93,7 @@ The DPF-CM is proposed in the paper **Conditional Measurement Density Estimation
 To reproduce the epxeriment results of the DPF-CM reported in the paper, run the following command:
 
 ```
-python experiment_DiskTracking.py --measurement CRNVP
+python main_DiskTracking.py --measurement CRNVP
 ```
     
 #### Available measurement models
