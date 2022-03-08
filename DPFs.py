@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from util import *
+from utils import *
 from nf.flows import *
 from nf.models import NormalizingFlowModel,NormalizingFlowModel_cond
 from torch.distributions import MultivariateNormal
@@ -9,8 +9,11 @@ import os
 from torch.utils.tensorboard import SummaryWriter
 from plot import *
 from model.models import *
+import cv2
 from resamplers.resamplers import resampler
 from losses import *
+from nf.cglow.CGlowModel import CondGlowModel
+
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 #6,1994715,10,311,1006,54,23,6,24,98
 
@@ -23,38 +26,42 @@ class DPF(nn.Module):
         self.NF = args.NF_dyn
         self.NFcond = args.NF_cond
         self.measurement = args.measurement
-        self.hidden_size = args.hiddensize # origin: 32
-        self.state_dim = 2 #4
+        self.hidden_size = args.hiddensize  # origin: 32
+        self.state_dim = 2  # 4
         self.lr = args.lr
-        self.alpha=args.alpha
+        self.alpha = args.alpha
         self.seq_len = args.sequence_length
         self.num_particle = args.num_particles
         self.batch_size = args.batchsize
 
         self.labeledRatio = args.labeledRatio
 
-        self.spring_force = 0.1 #0.1 #0.05  # 0.1 for one object; 0.05 for five objects
-        self.drag_force = 0.0075 #0.0075
+        self.spring_force = 0.1  # 0.1 #0.05  # 0.1 for one object; 0.05 for five objects
+        self.drag_force = 0.0075  # 0.0075
 
-        self.pos_noise = args.pos_noise #0.1 #0.1
-        self.vel_noise = args.vel_noise # 2.
-        self.NF_lr=args.NF_lr
+        self.pos_noise = args.pos_noise  # 0.1 #0.1
+        self.vel_noise = args.vel_noise  # 2.
+        self.NF_lr = args.NF_lr
         self.n_sequence = 2
 
         self.build_model()
 
-        self.eps=args.epsilon
-        self.scaling= args.scaling
-        self.threshold=args.threshold
-        self.max_iter=args.max_iter
-        self.resampler=resampler(self.param)
+        self.eps = args.epsilon
+        self.scaling = args.scaling
+        self.threshold = args.threshold
+        self.max_iter = args.max_iter
+        self.resampler = resampler(self.param)
 
     def build_model(self):
-
-        self.encoder = build_encoder(self.hidden_size)
+        if self.measurement=='CGLOW':
+            self.encoder = build_encoder_cglow(self.hidden_size)
+            self.decoder = build_decoder_cglow(self.hidden_size)
+            self.build_particle_encoder = build_particle_encoder_cglow
+        else:
+            self.encoder = build_encoder(self.hidden_size)
+            self.decoder = build_decoder(self.hidden_size)
+            self.build_particle_encoder = build_particle_encoder
         self.encoder_optim = torch.optim.Adam(self.encoder.parameters(), lr=self.lr)
-
-        self.decoder = build_decoder(self.hidden_size)
         self.decoder_optim = torch.optim.Adam(self.decoder.parameters(), lr=self.lr)
 
         self.likelihood_est = build_likelihood(self.hidden_size, self.state_dim)
@@ -63,11 +70,13 @@ class DPF(nn.Module):
         self.gaussian_distribution = torch.distributions.MultivariateNormal(torch.ones(self.hidden_size).to(device),
                                                                                                 100*torch.eye(self.hidden_size).to(device))
 
-        self.particle_encoder = build_particle_encoder(self.hidden_size,self.state_dim)
+        self.particle_encoder = self.build_particle_encoder(self.hidden_size, self.state_dim)
         self.particle_encoder_optim = torch.optim.Adam(self.particle_encoder.parameters(), lr=self.lr)
 
         self.transition_model = build_transition_model(self.state_dim)
         self.transition_model_optim = torch.optim.Adam(self.transition_model.parameters(), lr=self.lr)
+
+
 
         self.motion_update=motion_update
 
@@ -81,7 +90,10 @@ class DPF(nn.Module):
         self.cnf_measurement = build_conditional_nf(self.n_sequence, self.hidden_size, self.hidden_size, init_var=0.01, prior_std=2.5)
         self.cnf_measurement_optim = torch.optim.Adam(self.cnf_measurement.parameters(), lr=self.lr)
 
-        if self.measurement=='CNF':
+        self.cglow_measurement = build_conditional_glow(self.param).to(device)
+        self.cglow_measurement_optim = torch.optim.Adam(self.cglow_measurement.parameters(), lr=self.lr)
+
+        if self.measurement=='CRNVP':
             self.measurement_model = measurement_model_cnf(self.particle_encoder, self.cnf_measurement)
         elif self.measurement=='cos':
             self.measurement_model = measurement_model_cosine_distance(self.particle_encoder)
@@ -89,6 +101,8 @@ class DPF(nn.Module):
             self.measurement_model = measurement_model_NN(self.particle_encoder, self.likelihood_est)
         elif self.measurement=='gaussian':
             self.measurement_model = measurement_model_Gaussian(self.particle_encoder, self.gaussian_distribution)
+        elif self.measurement=='CGLOW':
+            self.measurement_model = measurement_model_cglow(self.particle_encoder, self.cglow_measurement)
 
         self.prototype_density=compute_normal_density(pos_noise=self.pos_noise, vel_noise= self.vel_noise)
 
@@ -123,9 +137,9 @@ class DPF(nn.Module):
             total_loss = lamda1 * loss_sup + lamda3 * loss_ae #
 
         elif self.param.trainType == 'SDPF':
-            lamda1 = 10.0
+            lamda1 = 1.0
             lamda2 = 0.01
-            lamda3 = 200.0
+            lamda3 = 2.0
             # loss_pseud_lik = self.pseudolikelihood_loss(particle_weight_list, noise_list, likelihood_list, index_list)
             if self.NF:
                 loss_pseud_lik = pseudolikelihood_loss_nf(particle_weight_list, noise_list, likelihood_list, index_list,
@@ -159,10 +173,10 @@ class DPF(nn.Module):
         for step in range(self.seq_len):
             # index_p shape: (batch, num_p)
             index_p = (torch.arange(self.num_particle)+self.num_particle* torch.arange(batch_size)[:, None].repeat((1, self.num_particle))).type(torch.int64).to(device)
-            ESS= torch.mean(1/torch.sum(particle_probs**2, dim=-1))
+            ESS = torch.mean(1/torch.sum(particle_probs**2, dim=-1))
 
             if ESS<0.5*self.num_particle:
-                particles_resampled, particle_probs_resampled, index_p=self.resampler(particles, particle_probs)
+                particles_resampled, particle_probs_resampled, index_p = self.resampler(particles, particle_probs)
                 particle_probs_resampled = particle_probs_resampled.log()
             else:
                 particles_resampled = particles
@@ -237,6 +251,7 @@ class DPF(nn.Module):
         self.cond_model.train()
         self.nf_dyn.train()
         self.cnf_measurement.train()
+        self.cglow_measurement.train()
 
     def set_eval_mode(self):
         self.encoder.eval()
@@ -248,17 +263,19 @@ class DPF(nn.Module):
         self.cond_model.eval()
         self.nf_dyn.eval()
         self.cnf_measurement.eval()
+        self.cglow_measurement.eval()
 
     def set_zero_grad(self):
-        self.encoder_optim.zero_grad()
-        self.decoder_optim.zero_grad()
-        self.likelihood_est_optim.zero_grad()
-        self.particle_encoder_optim.zero_grad()
-        self.transition_model_optim.zero_grad()
+        self.encoder.zero_grad()
+        self.decoder.zero_grad()
+        self.likelihood_est.zero_grad()
+        self.particle_encoder.zero_grad()
+        self.transition_model.zero_grad()
 
-        self.cond_model_optim.zero_grad()
-        self.nf_dyn_optim.zero_grad()
+        self.cond_model.zero_grad()
+        self.nf_dyn.zero_grad()
         self.cnf_measurement.zero_grad()
+        self.cglow_measurement.zero_grad()
 
     def set_optim_step(self):
         self.encoder_optim.step()
@@ -270,7 +287,7 @@ class DPF(nn.Module):
         self.cond_model_optim.step()
         self.nf_dyn_optim.step()
         self.cnf_measurement_optim.step()
-
+        self.cglow_measurement_optim.step()
     def adjust_learning_rate(self, epoch):
         """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
         lr = self.lr * (0.1 ** (epoch // 30))
@@ -484,7 +501,9 @@ class DPF(nn.Module):
                     'nf_dyn': self.nf_dyn.state_dict(),
                     'nf_dyn_optim': self.nf_dyn_optim.state_dict(),
                     'cnf_measurement': self.cnf_measurement.state_dict(),
+                    'cglow_measurement': self.cglow_measurement.state_dict(),
                     'cnf_measurement_optim': self.cnf_measurement_optim.state_dict(),
+                    'cglow_measurement_optim': self.cglow_measurement_optim.state_dict(),
                     "epoch": epoch
                 }
                 torch.save(checkpoint_e2e, os.path.join('logs', run_id, "models", 'e2e_model_bestval_e2e.pth'))
@@ -507,7 +526,9 @@ class DPF(nn.Module):
         self.cond_model_optim.load_state_dict(ckpt_e2e['cond_model_optim'])
         self.nf_dyn_optim.load_state_dict(ckpt_e2e['nf_dyn_optim'])
         self.cnf_measurement.load_state_dict(ckpt_e2e['cnf_measurement'])
+        self.cglow_measurement.load_state_dict(ckpt_e2e['cglow_measurement'])
         self.cnf_measurement_optim.load_state_dict(ckpt_e2e['cnf_measurement_optim'])
+        self.cglow_measurement_optim.load_state_dict(ckpt_e2e['cglow_measurement_optim'])
 
         epoch = ckpt_e2e['epoch']
 

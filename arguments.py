@@ -22,7 +22,7 @@ def parse_args(args=None):
 
     parser.add_argument('--NF-dyn', action='store_true',help='train using normalising flow')
     parser.add_argument('--NF-cond', action='store_true',help='train using conditional normalising flow')
-    parser.add_argument('--measurement',type=str, default='cos', help='|CNF|cos|NN')
+    parser.add_argument('--measurement',type=str, default='cos', help='|CRNVP|cos|NN|CGLOW|gaussian|')
     parser.add_argument('--NF-lr', type=float, default=2.5,help='NF learning rate')
 
     parser.add_argument('--epsilon', type=float, default=0.1, help='epsilon in OT resampling')
@@ -47,7 +47,7 @@ def parse_args(args=None):
 
     parser.add_argument('--optim', type=str, default='Adam',
                         help='type of optim')
-    parser.add_argument('--num_epochs', type=int, default=300, help='num epochs') # origin: 20, 13, 150
+    parser.add_argument('--num-epochs', type=int, default=300, help='num epochs') # origin: 20, 13, 150
     parser.add_argument('--num-particles', type=int, default=100, help='num of particles')
 
     parser.add_argument('--split-ratio', type=float, default=0.9, help='split training data')
@@ -77,6 +77,19 @@ def parse_args(args=None):
     parser.add_argument('--testing', action='store_true',
                         help='Check testing performance')
     parser.add_argument('--model-path', type=str, default='./model/e2e_model_bestval_e2e.pth', help='path of saved model')
+
+
+    parser.add_argument("--x_size", type=tuple, default=(3,8,8)) #
+    parser.add_argument("--y_size", type=tuple, default=(3,8,8)) #
+    parser.add_argument("--x_hidden_channels", type=int, default=8) #
+    parser.add_argument("--x_hidden_size", type=int, default=16) #
+    parser.add_argument("--y_hidden_channels", type=int, default=8) #
+    parser.add_argument("-K", "--flow_depth", type=int, default=1) #
+    parser.add_argument("-L", "--num_levels", type=int, default=1) #
+    parser.add_argument("--learn_top", type=bool, default=False) #
+
+    parser.add_argument("--x_bins", type=float, default=256.0)#
+    parser.add_argument("--y_bins", type=float, default=256.0)#
 
     args = parser.parse_args()
 
