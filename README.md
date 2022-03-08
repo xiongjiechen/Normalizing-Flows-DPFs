@@ -2,7 +2,7 @@
 
 This repository provides the code to reproduce the disk tracking experimental results in the paper **[Differentiable Particle Filters through Conditional Normalizing Flow](https://arxiv.org/abs/2107.00488)** and the paper **Conditional Measurement Density Estimation in Sequential Monte Carlo Methods via Normalizing Flow**.
 
-## Problem statement in the experiment
+## Problem statement in this experiment
 
 This experiment evaluates the performance of ***[Conditional Normalizing Flow DPF (CNF-DPF)](https://arxiv.org/abs/2107.00488)*** and ***DPF Conditional normalizing flow Measurement model (DPF-CM)*** in a disk tracking experiment where the task is to track a moving red disk moving along the other distractor disks with different colours. While tracking the target, the observation images are provided at each time step, from which we expect our filter to infer the position of the red disk. The red disk can be occluded by the distractors and may occasionlly run out of the boundary of the images as collisions are not considered in our setting. More detailed description can be found in the paper.
 <details>
