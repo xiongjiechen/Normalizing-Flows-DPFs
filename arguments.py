@@ -47,7 +47,7 @@ def parse_args(args=None):
 
     parser.add_argument('--optim', type=str, default='Adam',
                         help='type of optim')
-    parser.add_argument('--num-epochs', type=int, default=300, help='num epochs') # origin: 20, 13, 150
+    parser.add_argument('--num-epochs', type=int, default=150, help='num epochs') # origin: 20, 13, 150
     parser.add_argument('--num-particles', type=int, default=100, help='num of particles')
 
     parser.add_argument('--split-ratio', type=float, default=0.9, help='split training data')
@@ -91,6 +91,7 @@ def parse_args(args=None):
     parser.add_argument("--x_bins", type=float, default=256.0)#
     parser.add_argument("--y_bins", type=float, default=256.0)#
 
+    parser.add_argument("--individual", action='store_true',help='set individual opimizers for different units')
     args = parser.parse_args()
 
     return args

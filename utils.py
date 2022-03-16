@@ -69,20 +69,16 @@ def unfreeze_model(model):
     for param in model.parameters():
         param.requires_grad = True
 
-def set_optim_step_condflow(model):
-    model.encoder_optim.step()
-    model.decoder_optim.step()
-    model.likelihood_est_optim.step()
-    model.particle_encoder_optim.step()
-    model.transition_model_optim.step()
+def checkpoint_state(model,epoch):
+    state_dict={
+        "model": model.state_dict(),
+        'model_optim': model.optim.state_dict(),
+        'model_optim_scheduler': model.optim_scheduler.state_dict(),
+        "epoch": epoch
+    }
+    return state_dict
 
-    model.cond_model_optim.zero_grad()
-
-def set_zero_grad_condflow(model):
-    model.encoder_optim.zero_grad()
-    model.decoder_optim.zero_grad()
-    model.likelihood_est_optim.zero_grad()
-    model.particle_encoder_optim.zero_grad()
-    model.transition_model_optim.zero_grad()
-
-    model.cond_model_optim.zero_grad()
+def load_model(model, ckpt_e2e):
+    model.load_state_dict(ckpt_e2e['model'])
+    model.optim.load_state_dict(ckpt_e2e['model_optim'])
+    model.optim_scheduler.load_state_dict(ckpt_e2e['model_optim_scheduler'])
