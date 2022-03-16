@@ -57,7 +57,7 @@ if __name__ == "__main__":
         torch.save(dpf, './model/dpf.pkl')
 
     Disk_Test = ToyDiskDataset(data_path='./data/disk/TwentyfiveDistractors/', filename='toy_pn=2.0_d=25_const',
-                               # threeDistractors_400, toy_pn=0.1_d=3_const
+                               # threeDistractors_400, toy_pn=0.1_d=3_const#
                                datatype="test_data")
     test_loader = DataLoader(Disk_Test, batch_size=50, shuffle=False, drop_last=True)
 
