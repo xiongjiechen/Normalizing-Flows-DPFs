@@ -71,6 +71,13 @@ def parse_args(args=None):
                         default=2.0,
                         help='sigma for the velocity noise')
 
+    parser.add_argument('--true-pos-noise', dest='true_pos_noise', type=float,
+                        default=2.0,
+                        help='sigma for the positional process noise when generating datasets')
+    parser.add_argument('--true-vel-noise', dest='true_vel_noise', type=float,
+                        default=2.0,
+                        help='sigma for the velocity noise when generating datasets')
+
     parser.add_argument('--block-length', dest='block_length', type=int,
                         default=10, help='block length for pseudo-likelihood')  # dest: destination, origin=5
 
