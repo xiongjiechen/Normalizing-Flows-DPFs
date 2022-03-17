@@ -57,7 +57,7 @@ def parse_args(args=None):
 
     parser.add_argument('--dropout-keep-ratio', type=float, default=0.3, help='1-dropout_ratio')
     parser.add_argument('--particle_std', type=float, default=0.2, help='particle std')
-    parser.add_argument('--seed', type=int, default=10, help='random seed')#sup: 715,94715,10,311,1006        semi:715
+    parser.add_argument('--seed', type=int, default=2, help='random seed')#sup: 715,94715,10,311,1006        semi:715
 
     parser.add_argument('--sequence-length', dest='sequence_length', type=int,
                         default=50, help='length of the generated sequences')
@@ -65,10 +65,10 @@ def parse_args(args=None):
                         help='width (= height) of the generated observations')
 
     parser.add_argument('--pos-noise', dest='pos_noise', type=float,
-                        default=2.0,
+                        default=20.0,
                         help='sigma for the positional process noise')
     parser.add_argument('--vel-noise', dest='vel_noise', type=float,
-                        default=2.0,
+                        default=20.0,
                         help='sigma for the velocity noise')
 
     parser.add_argument('--true-pos-noise', dest='true_pos_noise', type=float,
