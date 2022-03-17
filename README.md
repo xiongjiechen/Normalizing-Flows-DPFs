@@ -119,7 +119,7 @@ Code for the above measurement models can be found in the python script ```./mod
     
 </details>
 
-<span style="color: blue">If you used other values other than the default one for the argument ```--pos-noise``` when running the script [create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py), it is needed to accordinlgy set the argument ```--true-pos-noise``` as the same value when running the main file, otherwise the Dataloader won't be able to find the dataset files.</span>.
+<span style="color: blue">If you used other values other than the default one for the argument ```--pos-noise``` when running the script [create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py), it is needed to accordinlgy set the argument ```--true-pos-noise``` as the same value when running the main file, otherwise the Dataloader won't be able to find the dataset files.</span>
 
 ## References 
 ### Code
