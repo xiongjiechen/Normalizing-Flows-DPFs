@@ -24,9 +24,15 @@ pip install -r requirements.txt
 
 ### Create datasets
 
-Run the file [./data/disk/create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py) to create the disk tracking dataset for training, validation and testing sets. The generated dataset will be stored in the folder ```./data/disk/``` as default. Some optional parameters are listed as follows:
+Change the working directory to folder [./data/disk/](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/) and run the file [create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py): 
+
+```python create_toy_dataset.py --pos-noise 2.0``` 
+
+to create the disk tracking dataset for training, validation and testing sets.
+
+The generated dataset will be stored in the folder ```./data/disk/``` as default. Some optional parameters are listed as follows:
 - ```--num-distractors``` number of distractors in the observation image. 
-- ```--pos_noise``` standard deviation of target positions when generating trajectories.
+- ```--pos-noise``` standard deviation of target positions when generating trajectories.
 - ```--vel-noise``` action noise of moving disks.
 - ```--num_examples``` number of trajectory samples being generated. 
 - ```--sequence_length``` length of generated trajectories.
