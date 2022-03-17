@@ -300,7 +300,7 @@ def main():
                              'one record')
 
     parser.add_argument('--pos-noise', dest='pos_noise', type=float,
-                        default=0.1,
+                        default=2.0,
                         help='sigma for the positional process noise')
     parser.add_argument('--num-distractors', dest='num_distractors', type=int,
                         default=25, help='number of distractor disc') # orig: 5
