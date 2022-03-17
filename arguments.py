@@ -4,7 +4,6 @@ import copy
 
 def parse_args(args=None):
 
-    # parser = configargparse.ArgumentParser()
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', action='store_false', help='whether to use GPU')
     parser.add_argument('--gpu-index', type=int, default=0, help='index num of GPU to use')
@@ -40,28 +39,28 @@ def parse_args(args=None):
     parser.add_argument('--Obs_feature', action='store_false',
                         help='Compute likelihood using feature similarity')
 
-    parser.add_argument('--batchsize', type=int, default=32, help='batch size') # origin: 32, 24
-    parser.add_argument('--hiddensize', type=int, default=32, help='hidden size')  # origin: 32
-    parser.add_argument('--lr', type=float, default=1e-4, # one object: 1e-3, 3e-4
-                        help='learning rate') # origin: 1e-3, 1e-4
+    parser.add_argument('--batchsize', type=int, default=32, help='batch size')
+    parser.add_argument('--hiddensize', type=int, default=32, help='hidden size')
+    parser.add_argument('--lr', type=float, default=1e-4,
+                        help='learning rate')
 
     parser.add_argument('--optim', type=str, default='Adam',
                         help='type of optim')
-    parser.add_argument('--num-epochs', type=int, default=150, help='num epochs') # origin: 20, 13, 150
+    parser.add_argument('--num-epochs', type=int, default=150, help='num epochs')
     parser.add_argument('--num-particles', type=int, default=100, help='num of particles')
 
     parser.add_argument('--split-ratio', type=float, default=0.9, help='split training data')
-    parser.add_argument('--labeledRatio', type=float, default=1.0, help='labeled training data') # 1.0 [0.1, 0.3, 0.5, 0.7, 0.9]
+    parser.add_argument('--labeledRatio', type=float, default=1.0, help='labeled training data')
     parser.add_argument('--init-with-true-state', action='store_true',
                         help='init_with_true_state, default: false, uniform initialisation')
 
     parser.add_argument('--dropout-keep-ratio', type=float, default=0.3, help='1-dropout_ratio')
     parser.add_argument('--particle_std', type=float, default=0.2, help='particle std')
-    parser.add_argument('--seed', type=int, default=2, help='random seed')#sup: 715,94715,10,311,1006        semi:715
+    parser.add_argument('--seed', type=int, default=2, help='random seed')
 
     parser.add_argument('--sequence-length', dest='sequence_length', type=int,
                         default=50, help='length of the generated sequences')
-    parser.add_argument('--width', dest='width', type=int, default=128, #120
+    parser.add_argument('--width', dest='width', type=int, default=128,
                         help='width (= height) of the generated observations')
 
     parser.add_argument('--pos-noise', dest='pos_noise', type=float,
@@ -79,24 +78,24 @@ def parse_args(args=None):
                         help='sigma for the velocity noise when generating datasets')
 
     parser.add_argument('--block-length', dest='block_length', type=int,
-                        default=10, help='block length for pseudo-likelihood')  # dest: destination, origin=5
+                        default=10, help='block length for pseudo-likelihood')
 
     parser.add_argument('--testing', action='store_true',
                         help='Check testing performance')
     parser.add_argument('--model-path', type=str, default='./model/e2e_model_bestval_e2e.pth', help='path of saved model')
 
 
-    parser.add_argument("--x_size", type=tuple, default=(3,8,8)) #
-    parser.add_argument("--y_size", type=tuple, default=(3,8,8)) #
-    parser.add_argument("--x_hidden_channels", type=int, default=8) #
-    parser.add_argument("--x_hidden_size", type=int, default=16) #
-    parser.add_argument("--y_hidden_channels", type=int, default=8) #
-    parser.add_argument("-K", "--flow_depth", type=int, default=1) #
-    parser.add_argument("-L", "--num_levels", type=int, default=1) #
-    parser.add_argument("--learn_top", type=bool, default=False) #
+    parser.add_argument("--x_size", type=tuple, default=(3,8,8))
+    parser.add_argument("--y_size", type=tuple, default=(3,8,8))
+    parser.add_argument("--x_hidden_channels", type=int, default=8)
+    parser.add_argument("--x_hidden_size", type=int, default=16)
+    parser.add_argument("--y_hidden_channels", type=int, default=8)
+    parser.add_argument("-K", "--flow_depth", type=int, default=1)
+    parser.add_argument("-L", "--num_levels", type=int, default=1)
+    parser.add_argument("--learn_top", type=bool, default=False)
 
-    parser.add_argument("--x_bins", type=float, default=256.0)#
-    parser.add_argument("--y_bins", type=float, default=256.0)#
+    parser.add_argument("--x_bins", type=float, default=256.0)
+    parser.add_argument("--y_bins", type=float, default=256.0)
 
     parser.add_argument("--individual", action='store_true',help='set individual opimizers for different units')
     args = parser.parse_args()
