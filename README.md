@@ -27,7 +27,7 @@ pip install -r requirements.txt
 Change the working directory to folder [./data/disk/](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/) and run the file [create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py): 
 
 ```
-python create_toy_dataset.py --pos-noise 2.0
+python create_toy_dataset.py
 ``` 
 
 to create the disk tracking dataset for training, validation and testing sets.
@@ -118,6 +118,8 @@ python main_DiskTracking.py --measurement CRNVP
 Code for the above measurement models can be found in the python script ```./model/models.py```
     
 </details>
+
+<span style="color: blue">If you used other values other than the default one for the argument ```--pos-noise``` when running the script [create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py), it is needed to accordinlgy set the argument ```--true-pos-noise``` as the same value when running the main file, otherwise the Dataloader won't be able to find the dataset files.</span>.
 
 ## References 
 ### Code
