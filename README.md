@@ -26,7 +26,9 @@ pip install -r requirements.txt
 
 Change the working directory to folder [./data/disk/](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/) and run the file [create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py): 
 
-```python create_toy_dataset.py --pos-noise 2.0``` 
+```
+python create_toy_dataset.py --pos-noise 2.0
+``` 
 
 to create the disk tracking dataset for training, validation and testing sets.
 
