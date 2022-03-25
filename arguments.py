@@ -87,9 +87,9 @@ def parse_args(args=None):
 
     parser.add_argument("--x_size", type=tuple, default=(3,8,8))
     parser.add_argument("--y_size", type=tuple, default=(3,8,8))
-    parser.add_argument("--x_hidden_channels", type=int, default=8)
-    parser.add_argument("--x_hidden_size", type=int, default=16)
-    parser.add_argument("--y_hidden_channels", type=int, default=8)
+    parser.add_argument("--x_hidden_channels", type=int, default=4)
+    parser.add_argument("--x_hidden_size", type=int, default=4)
+    parser.add_argument("--y_hidden_channels", type=int, default=4)
     parser.add_argument("-K", "--flow_depth", type=int, default=1)
     parser.add_argument("-L", "--num_levels", type=int, default=1)
     parser.add_argument("--learn_top", type=bool, default=False)
