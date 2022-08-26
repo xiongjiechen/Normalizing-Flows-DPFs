@@ -137,3 +137,13 @@ If you find this code useful for your research, please cite our paper:
     month={Nov.}
 }
 ```
+```
+@INPROCEEDINGS{chen2022,
+    author={Chen, Xiongjie and and Li, Yunpeng},
+    booktitle={Proc. Euro. Sig. Process. Conf. (EUSIPCO)},
+    title={Conditional Measurement Density Estimation in Sequential Monte Carlo Methods via Normalizing Flow},
+    year={2022},
+    address={Belgrade, Serbia},
+    month={Aug.}
+}
+```
