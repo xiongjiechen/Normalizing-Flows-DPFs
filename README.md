@@ -1,6 +1,6 @@
 # Normalizing-Flows-DPFs
 
-This repository provides the code to reproduce the disk tracking experimental results in the paper **[Differentiable Particle Filters through Conditional Normalizing Flow](https://arxiv.org/abs/2107.00488)** and the paper **Conditional Measurement Density Estimation in Sequential Monte Carlo Methods via Normalizing Flow**.
+This repository provides the code to reproduce the disk tracking experimental results in the paper **[Differentiable Particle Filters through Conditional Normalizing Flow](https://arxiv.org/abs/2107.00488)** and the paper **[Conditional Measurement Density Estimation in Sequential Monte Carlo Methods via Normalizing Flow](https://arxiv.org/abs/2203.08617)**.
 
 ## Problem statement in this experiment
 
