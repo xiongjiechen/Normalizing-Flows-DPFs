@@ -20,7 +20,7 @@ class compute_normal_density(nn.Module):
         self.pos_noise=pos_noise
         self.vel_noise=vel_noise
     def forward(self, noise, std_pos = None, std_vel = None):
-        log_c = - 0.5 * torch.log(torch.tensor(2 * np.pi))
+        log_c = - 0.5 * torch.log(torch.tensor(2 * np.pi)) 
         if std_pos is None:
             std_pos = self.pos_noise
         if std_vel is None:
