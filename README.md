@@ -1,16 +1,12 @@
 # Normalizing-Flows-DPFs
 
-This repository provides the code to reproduce the disk tracking experimental results in the paper **[Differentiable Particle Filters through Conditional Normalizing Flow](https://arxiv.org/abs/2107.00488)** and the paper **[Conditional Measurement Density Estimation in Sequential Monte Carlo Methods via Normalizing Flow](https://arxiv.org/abs/2203.08617)**.
+This repository provides the code to reproduce the disk tracking experimental results in two conference paper **[Differentiable Particle Filters through Conditional Normalizing Flow](https://arxiv.org/abs/2107.00488)** and **[Conditional Measurement Density Estimation in Sequential Monte Carlo Methods via Normalizing Flow](https://arxiv.org/abs/2203.08617)**, and one journal paper **[Normalizing Flow-based Differentiable Particle Filters
+](https://arxiv.org/abs/2403.01499)**.
 
 ## Problem statement in this experiment
 
-This experiment evaluates the performance of ***[Conditional Normalizing Flow DPF (CNF-DPF)](https://arxiv.org/abs/2107.00488)*** and ***[DPF Conditional normalizing flow Measurement model (DPF-CM)](https://arxiv.org/abs/2203.08617)*** in a disk tracking experiment where the task is to track a moving red disk moving along the other distractor disks with different colours. While tracking the target, the observation images are provided at each time step, from which we expect our filter to infer the position of the red disk. The red disk can be occluded by the distractors and may occasionlly run out of the boundary of the images as collisions are not considered in our setting. More detailed description can be found in the paper.
-<details>
-<summary>An example of the observation image</summary>
-    
-<img src="https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/Figure/Disk.PNG" width="300" />
-   
-</details>
+The experiments evaluate the performance of the Normalizing Flow-based Differentiable Particle Filters (NF-DPFs) in different setups. More detailed descriptions of the experiment setups can be found in the paper **[Normalizing Flow-based Differentiable Particle Filters
+](https://arxiv.org/abs/2403.01499)**.
 
 ## Prerequisites
 
@@ -22,18 +18,15 @@ To install the required python packages, run the following command:
 pip install -r requirements.txt
 ```
 
-### Create datasets
+### Prepare datasets
 
-Change the working directory to folder [./data/disk/](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/) and run the file [create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py): 
+To create datasets for the training and testing, please run the file [create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py): 
 
 ```
 python create_toy_dataset.py
 ``` 
 
-to create the disk tracking dataset for training, validation and testing sets.
-
-The generated dataset will be stored in the folder ```./data/disk/``` as default. Some optional parameters are listed as follows:
-- ```--num-distractors``` number of distractors in the observation image. 
+Some optional parameters are listed as follows:
 - ```--pos-noise``` standard deviation of target positions when generating trajectories.
 - ```--vel-noise``` action noise of moving disks.
 - ```--num_examples``` number of trajectory samples being generated. 
