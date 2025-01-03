@@ -56,11 +56,11 @@ Some optional parameters are listed as follows:
 ## Arguments in the experiment
 #### Basic arguments in the experiment
     
-- ```--trainType``` whether to train the model in the supervised setting or the semi-supervised setting, available options: **DPF|SDPF**.
+- ```--trainType``` whether to train the model in the supervised setting or the semi-supervised setting.
 - ```--lr``` learning rate when optimising the trained model.
 - ```--batchsize``` batch size of training dataloader.
 - ```--num_epochs``` number of training epochs.
-- ```--resampler_type``` type of particle resampler used in the experiment, available options: **soft|ot**.
+- ```--resampler_type``` type of particle resampler used in the experiment.
 - ```--num-particles``` number of particles used in the experiment.
 - ```--testing``` test a model saved in a specified path.
 - ```--model-path``` path of the tested model.
