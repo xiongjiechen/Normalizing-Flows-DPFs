@@ -19,7 +19,7 @@ def setup_seed(seed):
 def get_run_id(args):
     cnt = '{}_NF^{}_{}_{}_{}_{}_{}_resample^{}_{}'.format(args.seed, args.NF_dyn, args.trainType, args.pos_noise, args.vel_noise, args.NF_lr, args.lr, args.resampler_type, args.measurement)
     return cnt
-
+ 
 if __name__ == "__main__":
     if not os.path.isdir('logs'):
         os.mkdir('logs')
