@@ -21,7 +21,7 @@ device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 
 class Planar(nn.Module):
     """
-    Planar flow.
+    Planar flow. 
 
         z = f(x) = x + u h(wᵀx + b)
 

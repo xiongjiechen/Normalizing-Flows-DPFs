@@ -11,7 +11,7 @@ Thank you to the authors for providing well-documented source code!
 
 DEFAULT_MIN_BIN_WIDTH = 1e-3
 DEFAULT_MIN_BIN_HEIGHT = 1e-3
-DEFAULT_MIN_DERIVATIVE = 1e-3
+DEFAULT_MIN_DERIVATIVE = 1e-3 
 
 def searchsorted(bin_locations, inputs, eps=1e-6):
     bin_locations[..., -1] += eps
