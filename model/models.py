@@ -355,13 +355,13 @@ def normalising_flow_propose(cond_model, particles_pred, obs, flow=RealNVP_cond,
 
     return particles_update_nf, jac
 
-def proposal_likelihood(cond_model, dynamical_nf, measurement_model, particles_dynamical, particles_physical,
+def proposal_likelihood(cond_model, dynamical_nf, measurement_model, particles_dynamic, particles_physical,
                         encodings, noise, jac_dynamic, NF, NF_cond, prototype_density):
     encodings_clone = encodings.detach().clone()
     encodings_clone.requires_grad = False
 
     if NF_cond:
-        propose_particle, jac_prop = normalising_flow_propose(cond_model, particles_dynamical, encodings_clone)
+        propose_particle, jac_prop = normalising_flow_propose(cond_model, particles_dynamic, encodings_clone)
         if NF:
             particle_prop_dyn_inv, jac_prop_dyn_inv = nf_dynamic_model(dynamical_nf, propose_particle,jac_dynamic.shape, NF=NF, forward=True,
                                                                        mean=particles_physical.mean(dim=1, keepdim=True),
@@ -371,7 +371,7 @@ def proposal_likelihood(cond_model, dynamical_nf, measurement_model, particles_d
             prior_log = prototype_density(propose_particle - (particles_physical - noise))
         propose_log = prototype_density(noise) + jac_dynamic + jac_prop
     else:
-        propose_particle = particles_dynamical
+        propose_particle = particles_dynamic
         prior_log = prototype_density(noise) + jac_dynamic
         propose_log = prototype_density(noise) + jac_dynamic
 
