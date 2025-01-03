@@ -46,7 +46,7 @@ def parse_args(args=None):
 
     parser.add_argument('--optim', type=str, default='Adam',
                         help='type of optim')
-    parser.add_argument('--num-epochs', type=int, default=150, help='num epochs')
+    parser.add_argument('--num-epochs', type=int, default=500, help='num epochs')
     parser.add_argument('--num-particles', type=int, default=100, help='num of particles')
 
     parser.add_argument('--split-ratio', type=float, default=0.9, help='split training data')
@@ -87,9 +87,9 @@ def parse_args(args=None):
 
     parser.add_argument("--x_size", type=tuple, default=(3,8,8))
     parser.add_argument("--y_size", type=tuple, default=(3,8,8))
-    parser.add_argument("--x_hidden_channels", type=int, default=4)
-    parser.add_argument("--x_hidden_size", type=int, default=4)
-    parser.add_argument("--y_hidden_channels", type=int, default=4)
+    parser.add_argument("--x_hidden_channels", type=int, default=8)
+    parser.add_argument("--x_hidden_size", type=int, default=16)
+    parser.add_argument("--y_hidden_channels", type=int, default=8)
     parser.add_argument("-K", "--flow_depth", type=int, default=1)
     parser.add_argument("-L", "--num_levels", type=int, default=1)
     parser.add_argument("--learn_top", type=bool, default=False)

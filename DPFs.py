@@ -6,6 +6,7 @@ from nf.flows import *
 from nf.models import NormalizingFlowModel,NormalizingFlowModel_cond
 from torch.distributions import MultivariateNormal
 import os
+import time
 from torch.utils.tensorboard import SummaryWriter
 from plot import *
 from model.models import *
@@ -321,7 +322,7 @@ class DPF(nn.Module):
             total_sup_loss = []
             total_ae_loss = []
             for iteration, inputs in enumerate(train_loader):
-
+                tick = time.time()
                 loss_all, loss_sup, loss_pseud_lik, loss_ae, predictions, particle_list, particle_weight_list, state, start_state, image, likelihood_list, noise_list, obs_likelihood = self.forward(
                     inputs, train=True)
 
@@ -337,6 +338,8 @@ class DPF(nn.Module):
 
                 total_sup_loss.append(loss_sup.detach().cpu().numpy())
                 total_ae_loss.append(loss_ae.detach().cpu().numpy())
+                tock = time.time()
+                # print(tock - tick)
             self.optim_scheduler.step()
 
             train_loss_sup_mean = np.mean(total_sup_loss)
