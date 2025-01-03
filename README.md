@@ -20,10 +20,10 @@ pip install -r requirements.txt
 
 ### Prepare datasets
 
-To create datasets for the training and testing, please run the file [create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py): 
+To create datasets for the training and testing, please run the file [create_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_dataset.py): 
 
 ```
-python create_toy_dataset.py
+python create_dataset.py
 ``` 
 
 Some optional parameters are listed as follows:
@@ -112,7 +112,7 @@ Code for the above measurement models can be found in the python script ```./mod
     
 </details>
 
-<span style="color: blue">If you used other values other than the default one for the argument ```--pos-noise``` when running the script [create_toy_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_toy_dataset.py), it is needed to accordinlgy set the argument ```--true-pos-noise``` as the same value when running the main file, otherwise the Dataloader won't be able to find the dataset files.</span>
+<span style="color: blue">If you used other values other than the default one for the argument ```--pos-noise``` when running the script [create_dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/data/disk/create_dataset.py), it is needed to accordinlgy set the argument ```--true-pos-noise``` as the same value when running the main file, otherwise the Dataloader won't be able to find the dataset files.</span>
 
 ## References 
 ### Code
