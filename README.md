@@ -1,6 +1,6 @@
 # Normalizing-Flows-DPFs
 
-This repository provides the code to reproduce the disk tracking experimental results in two conference paper **[Differentiable Particle Filters through Conditional Normalizing Flow](https://arxiv.org/abs/2107.00488)** and **[Conditional Measurement Density Estimation in Sequential Monte Carlo Methods via Normalizing Flow](https://arxiv.org/abs/2203.08617)**, and one journal paper **[Normalizing Flow-based Differentiable Particle Filters
+This repository provides the code to reproduce the experimental results in the paper **[Normalizing Flow-based Differentiable Particle Filters
 ](https://arxiv.org/abs/2403.01499)**.
 
 ## Problem statement in this experiment
@@ -28,7 +28,7 @@ python create_toy_dataset.py
 
 Some optional parameters are listed as follows:
 - ```--pos-noise``` standard deviation of target positions when generating trajectories.
-- ```--vel-noise``` action noise of moving disks.
+- ```--vel-noise``` action noise of the target object.
 - ```--num_examples``` number of trajectory samples being generated. 
 - ```--sequence_length``` length of generated trajectories.
 - ```--out_dir``` specifies the directory to store the generated dataset.
@@ -45,9 +45,9 @@ Some optional parameters are listed as follows:
 
 ### Python scripts
 
-- [main_DiskTracking.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/main_DiskTracking.py): run this file to train, validate, and test the model.
+- [main.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/main.py): run this file to train, validate, and test the model.
 - [DPFs.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/DPFs.py): implementation of different differentiable particle filtering algorithms evaluated in the papers, contains functions for training, validating, and testing these methods.
-- [dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/dataset.py): creates a pytorch Dataset object for the disk tracking dataset.
+- [dataset.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/dataset.py): define a pytorch Dataset object for the created dataset.
 - [losses.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/losses.py): different optimisation objectives for training the model.
 - [utils.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/utils.py): useful functions to save space in the main file.
 - [arguments.py](https://github.com/xiongjiechen/Normalizing-Flows-DPFs/blob/main/arguments.py): configurations of the experiment.
@@ -75,7 +75,7 @@ The CNF-DPF is proposed in the paper **[Differentiable Particle Filters through 
 To evaluate the performance of the CNF-DPF, run the following command:
 
 ```
-python main_DiskTracking.py --NF-dyn --NF-cond 
+python main.py --NF-dyn --NF-cond 
 ```
 
 Related arguments:
@@ -94,7 +94,7 @@ The DPF-CM is proposed in the paper **Conditional Measurement Density Estimation
 To reproduce the epxeriment results of the DPF-CM reported in the paper, run the following command:
 
 ```
-python main_DiskTracking.py --measurement CRNVP
+python main.py --measurement CRNVP
 ```
     
 #### Available measurement models
@@ -121,7 +121,15 @@ The implemention of included normalizing flow models are from the repository: [n
 ## Citation
 If you find this code useful for your research, please cite our paper:
 ```
-@INPROCEEDINGS{chen2021,
+@article{chen2024,
+    author={Chen, Xiongjie and and Li, Yunpeng},
+    booktitle={IEEE Trans. Signal Process. (TSP)},
+    title={Normalizing Flow-based Differentiable Particle Filters},
+    year={2024}
+}
+```
+```
+@inproceedings{chen2021,
     author={Chen, Xiongjie and Wen, Hao and Li, Yunpeng},
     booktitle={Proc. Intl. Conf. Information Fusion (FUSION)},
     title={Differentiable Particle Filters through Conditional Normalizing Flow},
@@ -131,7 +139,7 @@ If you find this code useful for your research, please cite our paper:
 }
 ```
 ```
-@INPROCEEDINGS{chen2022,
+@inproceedings{chen2022,
     author={Chen, Xiongjie and and Li, Yunpeng},
     booktitle={Proc. Euro. Sig. Process. Conf. (EUSIPCO)},
     title={Conditional Measurement Density Estimation in Sequential Monte Carlo Methods via Normalizing Flow},
