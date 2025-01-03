@@ -6,7 +6,7 @@ from arguments import parse_args
 import random
 from DPFs import DPF
 import os
-
+ 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 def setup_seed(seed):
