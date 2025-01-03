@@ -129,16 +129,6 @@ If you find this code useful for your research, please cite our paper:
 }
 ```
 ```
-@inproceedings{chen2021,
-    author={Chen, Xiongjie and Wen, Hao and Li, Yunpeng},
-    booktitle={Proc. Intl. Conf. Information Fusion (FUSION)},
-    title={Differentiable Particle Filters through Conditional Normalizing Flow},
-    year={2021},
-    address={Sun City, South Africa},
-    month={Nov.}
-}
-```
-```
 @inproceedings{chen2022,
     author={Chen, Xiongjie and and Li, Yunpeng},
     booktitle={Proc. Euro. Sig. Process. Conf. (EUSIPCO)},
@@ -146,5 +136,15 @@ If you find this code useful for your research, please cite our paper:
     year={2022},
     address={Belgrade, Serbia},
     month={Aug.}
+}
+```
+```
+@inproceedings{chen2021,
+    author={Chen, Xiongjie and Wen, Hao and Li, Yunpeng},
+    booktitle={Proc. Intl. Conf. Information Fusion (FUSION)},
+    title={Differentiable Particle Filters through Conditional Normalizing Flow},
+    year={2021},
+    address={Sun City, South Africa},
+    month={Nov.}
 }
 ```
